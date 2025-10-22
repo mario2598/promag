@@ -210,11 +210,11 @@ class IngresosController extends Controller
 
 
         $ingresos =  DB::table('ingreso')
-            ->leftjoin('tipo_ingreso', 'tipo_ingreso.id', '=', 'ingreso.tipo')
+            ->leftjoin('sis_tipo', 'sis_tipo.id', '=', 'ingreso.tipo')
             ->leftjoin('sucursal', 'sucursal.id', '=', 'ingreso.sucursal')
             ->leftjoin('usuario', 'usuario.id', '=', 'ingreso.usuario')
             ->leftjoin('sis_estado', 'sis_estado.id', '=', 'ingreso.estado')
-            ->select('ingreso.*', 'sucursal.descripcion as nombreSucursal', 'tipo_ingreso.tipo as nombre_tipo_ingreso', 'usuario.usuario as nombreUsuario', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general');
+            ->select('ingreso.*', 'sucursal.descripcion as nombreSucursal', 'sis_tipo.nombre as nombre_tipo_ingreso', 'usuario.usuario as nombreUsuario', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general');
 
         if ($ingreso >= 1  && !$this->isNull($ingreso)) {
             $ingresos = $ingresos->where('ingreso.tipo', '=', $ingreso);
@@ -277,7 +277,7 @@ class IngresosController extends Controller
     {
 
         $ingresosSinAprobar =  DB::table('ingreso')
-            ->join('tipo_ingreso', 'tipo_ingreso.id', '=', 'ingreso.tipo')
+            ->join('sis_tipo', 'sis_tipo.id', '=', 'ingreso.tipo')
             ->join('usuario', 'usuario.id', '=', 'ingreso.usuario')
             ->select(
                 'ingreso.id',
@@ -287,7 +287,7 @@ class IngresosController extends Controller
                 'ingreso.monto_tarjeta',
                 'ingreso.descripcion',
                 'usuario.usuario as nombreUsuario',
-                'tipo_ingreso.tipo as tipoIngreso'
+                'sis_tipo.nombre as tipoIngreso'
             )
             ->where('ingreso.estado', '=', SisEstadoController::getIdEstadoByCodGeneral("ING_PEND_APB"))->orderby('ingreso.id', 'desc')->get();
 

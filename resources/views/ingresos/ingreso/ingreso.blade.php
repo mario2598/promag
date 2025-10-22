@@ -83,9 +83,9 @@
                                                 <label>Tipo ingreso</label>
                                                 <select class="form-control space_disabled" name="tipo_ingreso">
                                                     @foreach ($data['tipos_ingreso'] as $i)
-                                                        <option value="{{ $i->id }}" title="{{ $i->tipo ?? '' }}"
+                                                        <option value="{{ $i->id }}" title="{{ $i->nombre ?? '' }}"
                                                             @if ($i->id == ($data['ingreso']->tipo ?? -1)) selected @endif>
-                                                            {{ $i->tipo }}
+                                                            {{ $i->nombre }}
                                                         </option>
                                                     @endforeach
                                                 </select>

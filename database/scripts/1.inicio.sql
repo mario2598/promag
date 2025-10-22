@@ -217,9 +217,9 @@ INSERT INTO `vista` (`id`, `titulo`, `ruta`, `tipo`, `codigo_grupo`, `orden`, `p
 (18, 'Gestión Proyectos', '', 'G', 'proyectos', 0, 5, 'proyectos', 'fas fa-project-diagram', 0),
 (19, 'Proyectos', 'proyectos/proyectos', 'M', 'proyectos', 1, 5, 'proyGen', '', 0),
 (20, 'Proyectos Asignados', 'proyectos/proyectos_asignados', 'M', 'proyectos', 2, 5, 'proyAsig', '', 0),
-(21, 'Autorizar horas', 'proyectos/autorizar_horas', 'M', 'proyectos', 3, 5, 'proyAut', '', 0)
-(22, 'Rubros Extra Salario', 'mant/rubrosextrasalario', 'M', 'mant', 13, 1, 'mantRubExtSal', '', 0);
-
+(21, 'Autorizar horas', 'proyectos/autorizar_horas', 'M', 'proyectos', 3, 5, 'proyAut', '', 0),
+(22, 'Rubros Extra Salario', 'mant/rubrosextrasalario', 'M', 'mant', 13, 1, 'mantRubExtSal', '', 0),
+(23, 'Clientes', 'mant/clientes', 'M', 'mant', '14', '1', 'mantClientes', '', '0');
 -- --------------------------------------------------------
 
 --
@@ -289,6 +289,7 @@ CREATE TABLE `bit_usuario_proyecto` (
   `estado` int(11) NOT NULL,
   `usuario_autoriza` int(11) DEFAULT NULL,
   `fecha_autorizacion` datetime DEFAULT NULL,
+  `observacion_rechazo` text DEFAULT NULL,
   UNIQUE KEY `unique_usuario_proyecto_fecha_rubro` (`proyecto`, `usuario`, `fecha`, `rubro_extra_salario`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

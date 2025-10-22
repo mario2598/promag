@@ -148,8 +148,8 @@ trait SpaceUtil
    */
   public function getTiposIngreso()
   {
-    return DB::table('tipo_ingreso')
-      ->where('estado', '=', 'A')
+    return DB::table('sis_tipo')
+      ->where('clase', '=', 1)
       ->get();
   }
 

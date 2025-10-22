@@ -1,13 +1,13 @@
 <div class="main-sidebar sidebar-style-2">
   <aside id="sidebar-wrapper">
-      <div class="sidebar-brand">
+      <div class="sidebar-brand mb-3">
           <a href="{{ url('/') }}">
               <img title="Nombre empresa" alt="Logo empresa"
                   src="{{ asset('assets/images/default-logo.png') }}"
                   style="background-color: transparent; border-color: transparent;" class="img-thumbnail" />
           </a>
       </div>
-      <ul class="sidebar-menu">
+      <ul class="sidebar-menu mt-3">
           <li class="menu-header">Menú</li>
           <?php $menusSide = \App\Traits\SpaceUtil::cargarMenus()?>
           @foreach ($menusSide ?? [] as $m)

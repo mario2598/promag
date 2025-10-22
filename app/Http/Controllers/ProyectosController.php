@@ -700,6 +700,7 @@ class ProyectosController extends Controller
         try {
             $bitacoraId = $request->input('bitacora_id');
             $accion = $request->input('accion'); // 'aprobar' o 'rechazar'
+            $observacionRechazo = $request->input('observacion_rechazo', null);
             $usuarioAutoriza = session()->get('usuario')['id'] ?? 0;
 
             DB::beginTransaction();
@@ -717,13 +718,20 @@ class ProyectosController extends Controller
             // Obtener la bitácora antes de actualizar
             $bitacora = DB::table('bit_usuario_proyecto')->where('id', '=', $bitacoraId)->first();
 
+            $datosActualizacion = [
+                'estado' => $estado->id,
+                'usuario_autoriza' => $usuarioAutoriza,
+                'fecha_autorizacion' => date("Y-m-d H:i:s")
+            ];
+
+            // Si es rechazo y hay observación, agregarla
+            if ($accion === 'rechazar' && !empty($observacionRechazo)) {
+                $datosActualizacion['observacion_rechazo'] = $observacionRechazo;
+            }
+
             DB::table('bit_usuario_proyecto')
                 ->where('id', '=', $bitacoraId)
-                ->update([
-                    'estado' => $estado->id,
-                    'usuario_autoriza' => $usuarioAutoriza,
-                    'fecha_autorizacion' => date("Y-m-d H:i:s")
-                ]);
+                ->update($datosActualizacion);
 
             // Recalcular monto consumido de la línea de presupuesto si está asignada
             if ($bitacora && $bitacora->linea_presupuesto) {
@@ -737,6 +745,123 @@ class ProyectosController extends Controller
         } catch (QueryException $ex) {
             DB::rollBack();
             return $this->responseAjaxServerError("Error al cambiar el estado: " . $ex->getMessage(), []);
+        }
+    }
+
+    /**
+     * Carga usuarios con bitácoras pendientes agrupadas por proyecto
+     */
+    public function cargarUsuariosBitacorasPendientesAjax(Request $request)
+    {
+        try {
+            // Obtener ID del estado pendiente
+            $estadoPendiente = DB::table('sis_estado')
+                ->where('cod_general', '=', 'BIT_PROY_PENDIENTE')
+                ->first();
+
+            if (!$estadoPendiente) {
+                return $this->responseAjaxSuccess("", []);
+            }
+
+            // Obtener bitácoras pendientes agrupadas SOLO por usuario
+            $bitacorasPendientes = DB::table('bit_usuario_proyecto')
+                ->leftJoin('usuario', 'usuario.id', '=', 'bit_usuario_proyecto.usuario')
+                ->leftJoin('rubro_extra_salario', 'rubro_extra_salario.id', '=', 'bit_usuario_proyecto.rubro_extra_salario')
+                ->where('bit_usuario_proyecto.estado', '=', $estadoPendiente->id)
+                ->select(
+                    'bit_usuario_proyecto.usuario',
+                    DB::raw("CONCAT(usuario.nombre, ' ', usuario.ape1, IFNULL(CONCAT(' ', usuario.ape2), '')) as usuario_nombre"),
+                    'usuario.precio_hora',
+                    DB::raw('COUNT(bit_usuario_proyecto.id) as total_bitacoras'),
+                    DB::raw('COUNT(DISTINCT bit_usuario_proyecto.proyecto) as total_proyectos'),
+                    DB::raw('SUM(TIMESTAMPDIFF(SECOND, bit_usuario_proyecto.hora_entrada, bit_usuario_proyecto.hora_salida) / 3600) as total_horas'),
+                    DB::raw('SUM(
+                        (TIMESTAMPDIFF(SECOND, bit_usuario_proyecto.hora_entrada, bit_usuario_proyecto.hora_salida) / 3600) 
+                        * usuario.precio_hora 
+                        * IFNULL(rubro_extra_salario.multiplicador, 1.00)
+                    ) as monto_estimado')
+                )
+                ->groupBy('bit_usuario_proyecto.usuario', 'usuario.nombre', 'usuario.ape1', 'usuario.ape2', 'usuario.precio_hora')
+                ->orderBy('usuario.nombre', 'asc')
+                ->get();
+
+            return $this->responseAjaxSuccess("", $bitacorasPendientes);
+        } catch (QueryException $ex) {
+            return $this->responseAjaxServerError("Error cargando usuarios: " . $ex->getMessage(), []);
+        }
+    }
+
+    /**
+     * Autoriza múltiples bitácoras a la vez
+     */
+    public function autorizarMultiplesBitacorasAjax(Request $request)
+    {
+        try {
+            $bitacoraIds = $request->input('bitacora_ids', []);
+            $accion = $request->input('accion'); // 'aprobar' o 'rechazar'
+            $observacionRechazo = $request->input('observacion_rechazo', null);
+            $usuarioAutoriza = session()->get('usuario')['id'] ?? 0;
+
+            if (empty($bitacoraIds) || !is_array($bitacoraIds)) {
+                return $this->responseAjaxServerError("No se proporcionaron bitácoras para autorizar", []);
+            }
+
+            DB::beginTransaction();
+
+            $estadoCodigo = $accion === 'aprobar' ? 'BIT_PROY_APROBADA' : 'BIT_PROY_RECHAZADA';
+            $estado = DB::table('sis_estado')
+                ->where('cod_general', '=', $estadoCodigo)
+                ->first();
+                
+            if (!$estado) {
+                DB::rollBack();
+                return $this->responseAjaxServerError("Error: Estado {$estadoCodigo} no encontrado.", []);
+            }
+
+            // Obtener todas las bitácoras para recalcular líneas después
+            $bitacoras = DB::table('bit_usuario_proyecto')
+                ->whereIn('id', $bitacoraIds)
+                ->get();
+
+            $datosActualizacion = [
+                'estado' => $estado->id,
+                'usuario_autoriza' => $usuarioAutoriza,
+                'fecha_autorizacion' => date("Y-m-d H:i:s")
+            ];
+
+            // Si es rechazo masivo y hay observación, agregarla a todas
+            if ($accion === 'rechazar' && !empty($observacionRechazo)) {
+                $datosActualizacion['observacion_rechazo'] = $observacionRechazo;
+            }
+
+            // Actualizar todas las bitácoras
+            DB::table('bit_usuario_proyecto')
+                ->whereIn('id', $bitacoraIds)
+                ->update($datosActualizacion);
+
+            // Recalcular monto consumido de las líneas afectadas
+            $lineasAfectadas = [];
+            foreach ($bitacoras as $bitacora) {
+                if ($bitacora->linea_presupuesto && !in_array($bitacora->linea_presupuesto, $lineasAfectadas)) {
+                    $lineasAfectadas[] = $bitacora->linea_presupuesto;
+                }
+            }
+
+            foreach ($lineasAfectadas as $lineaId) {
+                $this->recalcularMontoConsumidoLinea($lineaId);
+            }
+
+            DB::commit();
+            
+            $total = count($bitacoraIds);
+            $mensaje = $accion === 'aprobar' 
+                ? "Se aprobaron {$total} bitácora(s) correctamente" 
+                : "Se rechazaron {$total} bitácora(s) correctamente";
+            
+            return $this->responseAjaxSuccess($mensaje, []);
+        } catch (QueryException $ex) {
+            DB::rollBack();
+            return $this->responseAjaxServerError("Error al autorizar bitácoras: " . $ex->getMessage(), []);
         }
     }
 
@@ -763,7 +888,8 @@ class ProyectosController extends Controller
                     'proyecto.nombre as proyecto_nombre',
                     'cliente.nombre_completo as cliente_nombre',
                     DB::raw("CONCAT(u.nombre, ' ', u.ape1, IFNULL(CONCAT(' ', u.ape2), '')) as usuario_nombre"),
-                    DB::raw("CONCAT(u_autoriza.nombre, ' ', u_autoriza.ape1, IFNULL(CONCAT(' ', u_autoriza.ape2), '')) as autorizado_por"),
+                    'u.precio_hora',
+                    DB::raw("CONCAT(u_autoriza.nombre, ' ', u_autoriza.ape1, IFNULL(CONCAT(' ', u_autoriza.ape2), '')) as usuario_autoriza_nombre"),
                     'rubro_extra_salario.nombre as rubro_nombre',
                     'rubro_extra_salario.multiplicador as rubro_multiplicador',
                     'proyecto_linea_presupuesto.numero_linea as linea_numero',
@@ -778,14 +904,14 @@ class ProyectosController extends Controller
                 if ($estadoPendiente) {
                     $query->where('bit_usuario_proyecto.estado', '=', $estadoPendiente->id);
                 }
-            } elseif ($filtroEstado === 'APROBADAS') {
+            } elseif ($filtroEstado === 'APROBADA') {
                 $estadoAprobada = DB::table('sis_estado')
                     ->where('cod_general', '=', 'BIT_PROY_APROBADA')
                     ->first();
                 if ($estadoAprobada) {
                     $query->where('bit_usuario_proyecto.estado', '=', $estadoAprobada->id);
                 }
-            } elseif ($filtroEstado === 'RECHAZADAS') {
+            } elseif ($filtroEstado === 'RECHAZADA') {
                 $estadoRechazada = DB::table('sis_estado')
                     ->where('cod_general', '=', 'BIT_PROY_RECHAZADA')
                     ->first();

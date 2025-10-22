@@ -380,6 +380,10 @@ function renderizarBitacoras(bitacoras) {
                 break;
             case 'BIT_PROY_RECHAZADA':
                 badgeEstado = '<span class="badge badge-danger">Rechazada</span>';
+                if (bitacora.observacion_rechazo && bitacora.observacion_rechazo.trim() !== '') {
+                    let observacionEscapada = bitacora.observacion_rechazo.replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/\n/g, '&#10;');
+                    badgeEstado += ` <i class="fas fa-comment-alt text-danger" style="cursor:pointer; font-size: 1.1em;" onclick="verObservacionRechazo('${observacionEscapada}')" title="Ver motivo de rechazo"></i>`;
+                }
                 botonesAccion = '<span class="text-muted">-</span>';
                 break;
             default:
@@ -578,5 +582,11 @@ function formatearFecha(fecha) {
 
 function formatearHora(hora) {
     return hora.substring(0, 5); // HH:MM
+}
+
+function verObservacionRechazo(observacion) {
+    let observacionDecodificada = observacion.replace(/&#39;/g, "'").replace(/&quot;/g, '"');
+    $('#contenido_observacion_rechazo').text(observacionDecodificada);
+    $('#modal_observacion_rechazo').modal('show');
 }
 

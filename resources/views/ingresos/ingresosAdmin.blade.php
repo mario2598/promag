@@ -54,8 +54,8 @@
                                         <select class="form-control" id="select_tipo_ingreso" name="tipo_ingreso">
                                             <option value="T" selected>Todos</option>
                                             @foreach ($data['tipos_ingreso'] as $i)
-                                                <option value="{{ $i->id }}" title="{{ $i->tipo ?? '' }}"
-                                                    @if ($i->id == $data['filtros']['tipo_ingreso']) selected @endif>{{ $i->tipo ?? '' }}
+                                                <option value="{{ $i->id }}" title="{{ $i->nombre ?? '' }}"
+                                                    @if ($i->id == $data['filtros']['tipo_ingreso']) selected @endif>{{ $i->nombre ?? '' }}
                                                 </option>
                                             @endforeach
                                         </select>

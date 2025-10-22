@@ -171,8 +171,10 @@ Route::group(['middleware' => 'autorizated:proyAsig'], function () {
 // Rutas para Autorización de Horas (proyAut)
 Route::group(['middleware' => 'autorizated:proyAut'], function () {
     Route::get('proyectos/autorizar_horas', 'ProyectosController@autorizarHoras');
+    Route::post('proyectos/cargarUsuariosBitacorasPendientes', 'ProyectosController@cargarUsuariosBitacorasPendientesAjax');
     Route::post('proyectos/cargarBitacorasAutorizacion', 'ProyectosController@cargarBitacorasAutorizacionAjax');
     Route::post('proyectos/autorizarBitacora', 'ProyectosController@cambiarEstadoBitacoraAjax');
+    Route::post('proyectos/autorizarMultiplesBitacoras', 'ProyectosController@autorizarMultiplesBitacorasAjax');
 });
 
 
