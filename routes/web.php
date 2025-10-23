@@ -59,12 +59,13 @@ Route::group(['middleware' => 'autorizated:mantSuc'], function () {
 |--------------------------------------------------------------------------
 | Mantenimiento de Parametros Generales
 |--------------------------------------------------------------------------
+| DESHABILITADO: Tabla parametros_generales no existe en esta versión
 */
 
-Route::group(['middleware' => 'autorizated:mantParGen'], function () {
-    Route::get('mant/parametrosgenerales', 'ParametrosGeneralesController@index');
-    Route::post('mant/guardarparametrosgenerales', 'ParametrosGeneralesController@guardar');
-});
+// Route::group(['middleware' => 'autorizated:mantParGen'], function () {
+//     Route::get('mant/parametrosgenerales', 'ParametrosGeneralesController@index');
+//     Route::post('mant/guardarparametrosgenerales', 'ParametrosGeneralesController@guardar');
+// });
 
 
 /*
@@ -183,12 +184,47 @@ Route::get('mant/impuestos', 'MantenimientoImpuestosController@index');
 Route::post('guardarimpuesto', 'MantenimientoImpuestosController@guardarImpuesto');
 Route::post('eliminarimpuesto', 'MantenimientoImpuestosController@eliminarImpuesto');
 
-/*** Rubros Extra Salariales */
+
+Route::group(['middleware' => 'autorizated:mantRubExtSal'], function () {
+    /*** Rubros Extra Salariales */
 Route::get('mant/rubrosextrasalario', 'MantenimientoRubrosExtraSalarioController@index');
 Route::post('mant/rubrosextrasalario/cargar', 'MantenimientoRubrosExtraSalarioController@cargarRubrosAjax');
 Route::post('mant/rubrosextrasalario/guardar', 'MantenimientoRubrosExtraSalarioController@guardarRubroAjax');
 Route::post('mant/rubrosextrasalario/eliminar', 'MantenimientoRubrosExtraSalarioController@eliminarRubroAjax');
 
+});
+
+Route::group(['middleware' => 'autorizated:mantRubDedSal'], function () {
+/*** Rubros Deducción Salarial */
+Route::get('mant/rubrosdeduccionsalario', 'MantenimientoRubrosDeduccionSalarioController@index');
+Route::post('mant/rubrosdeduccionsalario/cargar', 'MantenimientoRubrosDeduccionSalarioController@cargarRubrosAjax');
+Route::post('mant/rubrosdeduccionsalario/guardar', 'MantenimientoRubrosDeduccionSalarioController@guardarRubroAjax');
+Route::post('mant/rubrosdeduccionsalario/eliminar', 'MantenimientoRubrosDeduccionSalarioController@eliminarRubroAjax');
+});
+
+/*** Cuentas por Pagar */
+Route::group(['middleware' => 'autorizated:cxpIndex'], function () {
+Route::get('cxp/index', 'CuentaPorPagarController@index');
+Route::post('cxp/cargar', 'CuentaPorPagarController@cargarCxPAjax');
+Route::post('cxp/crear', 'CuentaPorPagarController@crearCxPAjax');
+Route::post('cxp/actualizar', 'CuentaPorPagarController@actualizarCxPAjax');
+Route::post('cxp/detalle', 'CuentaPorPagarController@obtenerDetalleCxPAjax');
+Route::post('cxp/aprobar-pagar', 'CuentaPorPagarController@aprobarYPagarCxPAjax');
+Route::post('cxp/rechazar', 'CuentaPorPagarController@rechazarCxPAjax');
+Route::get('cxp/historial_pagos_proyectos', 'CuentaPorPagarController@historialPagosProyectos');
+Route::post('cxp/historial-pagos-proyectos-ajax', 'CuentaPorPagarController@historialPagosProyectosAjax');
+Route::post('cxp/pagos-proyecto-ajax', 'CuentaPorPagarController@pagosProyectoAjax');
+Route::post('cxp/detalle-pago-proyecto-ajax', 'CuentaPorPagarController@detallePagoProyectoAjax');
+});
+
+/*** Mantenimiento de Monedas */
+Route::group(['middleware' => 'autorizated:mantMonedas'], function () {
+Route::get('mant/monedas', 'MantenimientoMonedasController@index');
+Route::post('mant/monedas/cargar', 'MantenimientoMonedasController@cargarMonedasAjax');
+Route::post('mant/monedas/guardar', 'MantenimientoMonedasController@guardarMonedaAjax');
+Route::post('mant/monedas/eliminar', 'MantenimientoMonedasController@eliminarMonedaAjax');
+Route::post('mant/monedas/obtener', 'MantenimientoMonedasController@obtenerMonedaAjax');
+});
 /*** Proveedores */
 Route::get('mant/proveedores', 'MantenimientoProveedorController@index');
 Route::post('guardarproveedor', 'MantenimientoProveedorController@guardarProveedor');

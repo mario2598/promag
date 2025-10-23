@@ -93,8 +93,8 @@ trait SpaceUtil
    */
   public function getTiposGasto()
   {
-    return DB::table('tipo_gasto')
-      ->where('estado', '=', 'A')
+    return DB::table('sis_tipo')
+      ->where('cod_general', '=', 'GEN_GASTOS')
       ->get();
   }
 
@@ -160,8 +160,14 @@ trait SpaceUtil
    */
   public function getParametrosGenerales()
   {
-    return DB::table('parametros_generales')
-      ->get()->first();
+    // Tabla parametros_generales no existe en esta versión
+    // return DB::table('parametros_generales')
+    //   ->get()->first();
+    
+    // Retornar valores por defecto
+    return (object)[
+      'porcentaje_banco' => 2.5, // 2.5% por defecto
+    ];
   }
 
   /**
@@ -184,8 +190,8 @@ trait SpaceUtil
    */
   public function getTiposPago()
   {
-    return DB::table('tipo_pago')
-      ->where('estado', '=', 'A')
+    return DB::table('sis_tipo')
+      ->where('cod_general', '=', 'GEN_TIPOS_PAGOS')
       ->get();
   }
 
@@ -774,6 +780,7 @@ trait SpaceUtil
 
   /**
    * Devuelve el total de ingresos del mes, cantidad de ingresos y el promedio
+   * Con desglose por moneda
    */
   public function resumenContable($desde = null, $hasta = null, $sucursal = null)
   {
@@ -783,7 +790,7 @@ trait SpaceUtil
 
     $gastos = DB::table('gasto')
       ->join('sis_estado', 'sis_estado.id', '=', 'gasto.estado')
-      ->where('sis_estado.cod_general', '=', "EST_GASTO_ELIMINADO");
+      ->where('sis_estado.cod_general', '!=', "EST_GASTO_ELIMINADO"); // Cambiado != en vez de =
 
     if ($sucursal != null && $sucursal != '' && $sucursal != 'T') {
       $ingresos = $ingresos->where('ingreso.sucursal', '=', $sucursal);
@@ -803,43 +810,124 @@ trait SpaceUtil
     }
 
 
-    $parametros = DB::table('parametros_generales')->get()->first();
-    $porcentaje_banco = $parametros->porcentaje_banco / 100;
+    // Tabla parametros_generales no existe - usar valor por defecto
+    // $parametros = DB::table('parametros_generales')->get()->first();
+    // $porcentaje_banco = $parametros->porcentaje_banco / 100;
+    $porcentaje_banco = 2.5 / 100; // 2.5% por defecto
     $totalPagoTarjeta = 0;
 
 
     $ingresos = $ingresos->get();
-    $gastos = $gastos->sum('monto');
+    
+    // Obtener gastos con su moneda
+    $gastosQuery = DB::table('gasto')
+      ->join('sis_estado', 'sis_estado.id', '=', 'gasto.estado')
+      ->where('sis_estado.cod_general', '!=', "EST_GASTO_ELIMINADO");
 
+    if ($sucursal != null && $sucursal != '' && $sucursal != 'T') {
+      $nombreSucursal =  DB::table('sucursal')->where('id', '=', $sucursal)->get()->first()->descripcion;
+      $gastosQuery = $gastosQuery->where('gasto.sucursal', 'like', '%' . $nombreSucursal . '%');
+    }
+
+    if ($desde != null && $desde != '') {
+      $desde_calc = date('Y-m-d 00:00:00', strtotime($desde));
+      $gastosQuery = $gastosQuery->where('gasto.fecha', '>=', $desde_calc);
+    }
+    if ($hasta != null && $hasta != '') {
+      $hasta_calc = date('Y-m-d 23:59:59', strtotime($hasta));
+      $gastosQuery = $gastosQuery->where('gasto.fecha', '<=', $hasta_calc);
+    }
+
+    $gastosDetalle = $gastosQuery->select('gasto.monto', 'gasto.codigo_moneda', 'gasto.tipo_cambio')->get();
+
+    // Totales en CRC
     $totalIngresos = 0;
     $totalIngresosEfectivo = 0;
     $totalIngresosTarjeta = 0;
     $totalIngresosSinpe = 0;
 
+    // Desglose por moneda - Ingresos
+    $resumenMonedas = [];
+
     foreach ($ingresos as $i) {
-      $sinpe = $i->monto_sinpe ?? 0;
-      $efectivo = $i->monto_efectivo ?? 0;
+      $codigoMoneda = $i->codigo_moneda ?? 'CRC';
+      $tipoCambio = floatval($i->tipo_cambio ?? 1.0);
 
-      $tarjeta = $i->monto_tarjeta ?? 0;
-      $porcentaje_cobro_tarjeta_aux = $tarjeta * $porcentaje_banco;
+      // Calcular montos en moneda original
+      $sinpe = floatval($i->monto_sinpe ?? 0);
+      $efectivo = floatval($i->monto_efectivo ?? 0);
+      $tarjeta = floatval($i->monto_tarjeta ?? 0);
+      
+      $total = $sinpe + $efectivo + $tarjeta;
 
-      $i->total = $sinpe + $efectivo + $tarjeta;
+      // Convertir a CRC para totales generales
+      $sinpeCRC = $sinpe * $tipoCambio;
+      $efectivoCRC = $efectivo * $tipoCambio;
+      $tarjetaCRC = $tarjeta * $tipoCambio;
+      $totalCRC = $total * $tipoCambio;
 
-      $totalIngresosEfectivo = $totalIngresosEfectivo + $efectivo;
-      $totalIngresosTarjeta = $totalIngresosTarjeta + $tarjeta;
-      $totalIngresosSinpe = $totalIngresosSinpe + $sinpe;
-      $totalPagoTarjeta = $totalPagoTarjeta + $porcentaje_cobro_tarjeta_aux;
+      $porcentaje_cobro_tarjeta_aux = $tarjetaCRC * $porcentaje_banco;
 
-      $totalIngresos = $totalIngresos + $i->total;
+      // Acumular en totales en CRC
+      $totalIngresosEfectivo += $efectivoCRC;
+      $totalIngresosTarjeta += $tarjetaCRC;
+      $totalIngresosSinpe += $sinpeCRC;
+      $totalPagoTarjeta += $porcentaje_cobro_tarjeta_aux;
+      $totalIngresos += $totalCRC;
+
+      // Acumular por moneda
+      if (!isset($resumenMonedas[$codigoMoneda])) {
+        $resumenMonedas[$codigoMoneda] = [
+          'codigo_moneda' => $codigoMoneda,
+          'total_efectivo' => 0,
+          'total_tarjeta' => 0,
+          'total_sinpe' => 0,
+          'total' => 0,
+          'total_efectivo_crc' => 0,
+          'total_tarjeta_crc' => 0,
+          'total_sinpe_crc' => 0,
+          'total_crc' => 0,
+        ];
+      }
+
+      $resumenMonedas[$codigoMoneda]['total_efectivo'] += $efectivo;
+      $resumenMonedas[$codigoMoneda]['total_tarjeta'] += $tarjeta;
+      $resumenMonedas[$codigoMoneda]['total_sinpe'] += $sinpe;
+      $resumenMonedas[$codigoMoneda]['total'] += $total;
+      $resumenMonedas[$codigoMoneda]['total_efectivo_crc'] += $efectivoCRC;
+      $resumenMonedas[$codigoMoneda]['total_tarjeta_crc'] += $tarjetaCRC;
+      $resumenMonedas[$codigoMoneda]['total_sinpe_crc'] += $sinpeCRC;
+      $resumenMonedas[$codigoMoneda]['total_crc'] += $totalCRC;
     }
 
-    $parametros = $this->getParametrosGenerales();
+    // Desglose por moneda - Gastos
+    $gastosGeneral = 0;
+    $resumenGastosPorMoneda = [];
+
+    foreach ($gastosDetalle as $gasto) {
+      $codigoMoneda = $gasto->codigo_moneda ?? 'CRC';
+      $tipoCambio = floatval($gasto->tipo_cambio ?? 1.0);
+      $monto = floatval($gasto->monto);
+      $montoCRC = $monto * $tipoCambio;
+
+      $gastosGeneral += $montoCRC;
+
+      if (!isset($resumenGastosPorMoneda[$codigoMoneda])) {
+        $resumenGastosPorMoneda[$codigoMoneda] = [
+          'codigo_moneda' => $codigoMoneda,
+          'total' => 0,
+          'total_crc' => 0,
+        ];
+      }
+
+      $resumenGastosPorMoneda[$codigoMoneda]['total'] += $monto;
+      $resumenGastosPorMoneda[$codigoMoneda]['total_crc'] += $montoCRC;
+    }
 
     $mesActual = date("M");
 
     $subTotalFondos = $totalIngresos;
-
-    $totalFondos = $subTotalFondos - $gastos;
+    $totalFondos = $subTotalFondos - $gastosGeneral;
     $totalFondos = $totalFondos - $totalPagoTarjeta;
 
     //Totales en conjunto
@@ -849,12 +937,10 @@ trait SpaceUtil
     $totalPagoTarjetaGeneral = $totalPagoTarjeta;
 
     $subTotalFondosGeneral = $subTotalFondos;
-    $subTotalFondosGeneral = $subTotalFondosGeneral - $totalPagoTarjeta;;
+    $subTotalFondosGeneral = $subTotalFondosGeneral - $totalPagoTarjeta;
     $totalFondosGeneral = $totalFondos;
-    $gastosGeneral = $gastos;
 
     $resumen = [
-
       'totalIngressosTarjeta' => $totalIngresosTarjeta,
       'mesActual' => $mesActual,
       'totalIngresosSinpe' => $totalIngresosSinpe,
@@ -867,15 +953,18 @@ trait SpaceUtil
       'totalIngresosEfectivoGeneral' => $totalIngresosEfectivoGeneral,
       'totalIngresosTarjetaGeneral' => $totalIngresosTarjetaGeneral,
       'totalPagoTarjetaGeneral' => $totalPagoTarjetaGeneral,
-      'gastos' => $gastos,
+      'gastos' => $gastosGeneral,
       'gastosGeneral' => $gastosGeneral,
       'subTotalFondos' => $subTotalFondos,
       'totalFondosGeneral' => $totalFondosGeneral,
       'subTotalFondosGeneral' => $subTotalFondosGeneral,
       'totalFondos' => $totalFondos,
       'ingresos' => $totalIngresos,
+      // Nuevos datos por moneda
+      'resumenMonedas' => array_values($resumenMonedas),
+      'resumenGastosPorMoneda' => array_values($resumenGastosPorMoneda),
     ];
-    // dd($resumen);
+    
     return $resumen;
   }
 }

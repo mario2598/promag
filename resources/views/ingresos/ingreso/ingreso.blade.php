@@ -77,6 +77,33 @@
                                                     placeholder="0.00" min="0">
                                             </div>
                                         </div>
+                                        
+                                        <div class="col-12 col-md-4 col-lg-4">
+                                            <div class="form-group">
+                                                <label>Moneda</label>
+                                                <select class="form-control" name="codigo_moneda" id="codigo_moneda" onchange="actualizarTipoCambio()">
+                                                    <?php $monedas = \App\Http\Controllers\MantenimientoMonedasController::getMonedasActivas() ?>
+                                                    @foreach ($monedas as $moneda)
+                                                        <option value="{{ $moneda->codigo }}" 
+                                                                data-tipo-cambio="{{ $moneda->tipo_cambio }}"
+                                                                {{ $moneda->codigo == ($data['ingreso']->codigo_moneda ?? 'CRC') ? 'selected' : '' }}>
+                                                            {{ $moneda->codigo }} - {{ $moneda->descripcion }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="col-12 col-md-4 col-lg-4">
+                                            <div class="form-group">
+                                                <label>Tipo de Cambio</label>
+                                                <input type="number" step="0.0001" class="form-control" 
+                                                       name="tipo_cambio" id="tipo_cambio" 
+                                                       value="{{ $data['ingreso']->tipo_cambio ?? '1.0000' }}" 
+                                                       min="0.0001" required readonly>
+                                                <small class="form-text text-muted">Tipo de cambio al momento de la transacción</small>
+                                            </div>
+                                        </div>
 
                                         <div class="col-12 col-md-4 col-lg-4">
                                             <div class="form-group">
@@ -219,5 +246,23 @@
             }
         }
     </script>
+    
+    <script>
+    function actualizarTipoCambio() {
+        const selectMoneda = document.getElementById('codigo_moneda');
+        const inputTipoCambio = document.getElementById('tipo_cambio');
+        
+        const opcionSeleccionada = selectMoneda.options[selectMoneda.selectedIndex];
+        const tipoCambio = opcionSeleccionada.getAttribute('data-tipo-cambio');
+        
+        inputTipoCambio.value = tipoCambio;
+    }
+
+    // Inicializar al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        actualizarTipoCambio();
+    });
+    </script>
+    
     <script src="{{ asset('assets/js/ingresos.js') }}"></script>
 @endsection

@@ -230,15 +230,86 @@
 
                     <!-- Acciones masivas -->
                     <div class="mb-3" id="botones_acciones_masivas">
-                        <button type="button" class="btn btn-success btn-lg" onclick="aprobarTodasBitacoras()">
-                            <i class="fas fa-check-double"></i> Aprobar Todas
+                        <button type="button" class="btn btn-success btn-lg" onclick="aprobarYGenerarCxP()" id="btn_aprobar_cxp" disabled>
+                            <i class="fas fa-check-double"></i> Aprobar y Generar CxP
                         </button>
                         <button type="button" class="btn btn-danger btn-lg" onclick="rechazarTodasBitacoras()">
                             <i class="fas fa-times-circle"></i> Rechazar Todas
                         </button>
                         <span class="ml-3 text-muted">
-                            <i class="fas fa-info-circle"></i> O puede aprobar/rechazar individualmente
+                            <i class="fas fa-info-circle"></i> Seleccione las bitácoras para aprobar y generar Cuenta por Pagar
                         </span>
+                    </div>
+
+                    <!-- Sección de Deducciones (Colapsable) -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-header" style="cursor: pointer;" data-toggle="collapse" data-target="#collapse_deducciones">
+                            <h6 class="mb-0">
+                                <i class="fas fa-minus-circle"></i> Deducciones de Salario (Opcionales)
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div id="collapse_deducciones" class="collapse">
+                            <div class="card-body py-2">
+                                <div class="alert alert-info py-2 mb-2">
+                                    <small><i class="fas fa-info-circle"></i> Las deducciones se aplicarán al monto total. CxP final = <strong>Total - Deducciones</strong></small>
+                                </div>
+                                <div class="row" id="contenedor_deducciones">
+                                    <?php $rubrosDeduccion = DB::table('rubro_deduccion_salario')->where('estado', 1)->get(); ?>
+                                    @foreach($rubrosDeduccion as $rubro)
+                                    <div class="col-md-6 col-lg-4">
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input checkbox-deduccion" 
+                                                   id="deduccion_{{ $rubro->id }}" 
+                                                   value="{{ $rubro->id }}"
+                                                   data-porcentaje="{{ $rubro->porcentaje_deduccion }}"
+                                                   data-nombre="{{ $rubro->nombre }}"
+                                                   onchange="actualizarDeduccionesResumen()">
+                                            <label class="custom-control-label" for="deduccion_{{ $rubro->id }}" title="{{ $rubro->descripcion }}">
+                                                <strong>{{ $rubro->nombre }}</strong> <small>({{ $rubro->porcentaje_deduccion }}%)</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                                <div class="mt-3" id="resumen_deducciones" style="display: none;">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white py-2">
+                                            <strong><i class="fas fa-calculator"></i> Resumen de Deducciones</strong>
+                                        </div>
+                                        <div class="card-body p-2">
+                                            <table class="table table-sm table-bordered mb-2">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>Concepto</th>
+                                                        <th class="text-right" style="width: 120px;">Monto</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr class="bg-light">
+                                                        <td><strong><i class="fas fa-clock"></i> Subtotal por Horas Trabajadas</strong></td>
+                                                        <td class="text-right"><strong><span id="subtotal_horas_deducciones">₡0.00</span></strong></td>
+                                                    </tr>
+                                                </tbody>
+                                                <tbody id="detalle_deducciones">
+                                                    <!-- Aquí se insertarán las deducciones dinámicamente -->
+                                                </tbody>
+                                                <tbody>
+                                                    <tr class="table-info">
+                                                        <td><strong><i class="fas fa-minus-circle"></i> Total Deducciones</strong></td>
+                                                        <td class="text-right text-danger"><strong><span id="total_deducciones">₡0.00</span></strong></td>
+                                                    </tr>
+                                                    <tr class="table-success">
+                                                        <td><strong><i class="fas fa-check-circle"></i> TOTAL A PAGAR</strong></td>
+                                                        <td class="text-right"><strong><h5 class="mb-0 text-success"><span id="total_final_deducciones">₡0.00</span></h5></strong></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Contenedor de bitácoras agrupadas por proyecto -->

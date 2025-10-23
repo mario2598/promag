@@ -295,6 +295,8 @@ class MantenimientoUsuariosController extends Controller
             $fecha_actual =  date("Y-m-d H:i:s");
             $tipoUsuario = $usuarioR['tip_u_co'];
             $precio_hora = $usuarioR['precio_hora'] ?? 0;
+            $nombre_beneficiario = $usuarioR['nombre_beneficiario'] ?? null;
+            $numero_cuenta = $usuarioR['numero_cuenta'] ?? null;
 
             $rol = $usuarioR['rol'];
             try {
@@ -314,7 +316,9 @@ class MantenimientoUsuariosController extends Controller
                             'usuario' => $nombreUsuario,
                             'sucursal' => $sucursal,
                             'rol' => $rol,
-                            'precio_hora' => $precio_hora
+                            'precio_hora' => $precio_hora,
+                            'nombre_beneficiario' => $nombre_beneficiario,
+                            'numero_cuenta' => $numero_cuenta
                         ]);
                 } else { // Nuevo usuario
                     $id = DB::table('usuario')->insertGetId([
@@ -332,7 +336,9 @@ class MantenimientoUsuariosController extends Controller
                         'sucursal' => $sucursal,
                         'rol' => $rol,
                         'estado' => SisEstadoController::getIdEstadoByCodGeneral("USU_ACT"),
-                        'precio_hora' => $precio_hora
+                        'precio_hora' => $precio_hora,
+                        'nombre_beneficiario' => $nombre_beneficiario,
+                        'numero_cuenta' => $numero_cuenta
                     ]);
 
                     DB::table('panel_configuraciones')->insertGetId([

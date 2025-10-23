@@ -3,6 +3,7 @@ var tablaUsuariosPendientes;
 var tablaHistorialBitacoras;
 var bitacorasUsuarioActual = [];
 var filtroActual = 'TODAS';
+var bitacorasSeleccionadas = [];
 
 $(document).ready(function () {
     cargarUsuariosPendientes();
@@ -216,12 +217,13 @@ function renderizarDesgloseBitacorasPorProyecto(bitacoras) {
         let totalCostoProyecto = 0;
 
         let tablaBitacoras = `
-            <div class="card mb-3">
+            <div class="card mb-3" data-proyecto-id="${proyecto.id}">
                 <div class="card-header bg-light">
                     <h6 class="mb-0">
                         <i class="fas fa-folder"></i> <strong>${proyecto.nombre}</strong>
                         <span class="text-muted">| Cliente: ${proyecto.cliente}</span>
                         <span class="badge badge-warning float-right">${proyecto.bitacoras.length} bitácora(s)</span>
+                        <span class="precio-hora" data-precio="${precioHora}" style="display: none;"></span>
                     </h6>
                 </div>
                 <div class="card-body p-0">
@@ -229,6 +231,10 @@ function renderizarDesgloseBitacorasPorProyecto(bitacoras) {
                         <table class="table table-sm table-bordered table-hover mb-0">
                             <thead class="thead-light">
                                 <tr class="text-center">
+                                    <th>
+                                        <input type="checkbox" class="form-check-input" onchange="seleccionarTodasBitacoras()" id="select_all_bitacoras">
+                                        <label class="form-check-label ml-1" for="select_all_bitacoras">Seleccionar</label>
+                                    </th>
                                     <th>Fecha</th>
                                     <th>Entrada</th>
                                     <th>Salida</th>
@@ -248,8 +254,12 @@ function renderizarDesgloseBitacorasPorProyecto(bitacoras) {
             let multiplicador = parseFloat(bitacora.rubro_multiplicador || 1.00);
             let costo = horas * precioHora * multiplicador;
 
-            totalHorasProyecto += horas;
-            totalCostoProyecto += costo;
+            // Solo sumar si la bitácora está seleccionada
+            if (bitacorasSeleccionadas.includes(bitacora.id)) {
+                totalHorasProyecto += horas;
+                totalCostoProyecto += costo;
+            }
+            
             totalGeneralHoras += horas;
             totalGeneralCosto += costo;
 
@@ -262,19 +272,21 @@ function renderizarDesgloseBitacorasPorProyecto(bitacoras) {
             }
 
             tablaBitacoras += `
-                <tr class="text-center">
+                <tr class="text-center" data-bitacora-id="${bitacora.id}" data-proyecto-id="${proyecto.proyecto_id}">
+                    <td>
+                        <input type="checkbox" class="form-check-input checkbox-bitacora" 
+                               value="${bitacora.id}" 
+                               onchange="toggleSeleccionBitacora(${bitacora.id}, this.checked)">
+                    </td>
                     <td>${formatearFecha(bitacora.fecha)}</td>
-                    <td>${formatearHora(bitacora.hora_entrada)}</td>
-                    <td>${formatearHora(bitacora.hora_salida)}</td>
-                    <td><strong>${horas.toFixed(2)}</strong> hrs</td>
-                    <td><small>${rubroTexto}</small></td>
+                    <td class="hora-entrada">${formatearHora(bitacora.hora_entrada)}</td>
+                    <td class="hora-salida">${formatearHora(bitacora.hora_salida)}</td>
+                    <td class="subtotal-horas-ind"><strong>${horas.toFixed(2)}</strong> hrs</td>
+                    <td><small class="multiplicador" data-valor="${multiplicador}">${rubroTexto}</small></td>
                     <td>${lineaTexto}</td>
                     <td class="text-left"><small>${bitacora.descripcion}</small></td>
-                    <td class="text-success"><strong>₡${costo.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong></td>
+                    <td class="text-success costo-bitacora" data-costo="${costo}"><strong>₡${costo.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong></td>
                     <td>
-                        <button class="btn btn-sm btn-success" onclick="aprobarBitacora(${bitacora.id})" title="Aprobar">
-                            <i class="fas fa-check"></i>
-                        </button>
                         <button class="btn btn-sm btn-danger" onclick="rechazarBitacora(${bitacora.id})" title="Rechazar">
                             <i class="fas fa-times"></i>
                         </button>
@@ -287,10 +299,10 @@ function renderizarDesgloseBitacorasPorProyecto(bitacoras) {
                             </tbody>
                             <tfoot class="bg-light">
                                 <tr class="font-weight-bold">
-                                    <td colspan="3" class="text-right">Subtotal Proyecto:</td>
-                                    <td class="text-center">${totalHorasProyecto.toFixed(2)} hrs</td>
+                                    <td colspan="3" class="text-right">Subtotal Seleccionadas:</td>
+                                    <td class="text-center subtotal-horas">${totalHorasProyecto.toFixed(2)} hrs</td>
                                     <td colspan="3"></td>
-                                    <td class="text-center text-success">₡${totalCostoProyecto.toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
+                                    <td class="text-center text-success subtotal-costo">₡${totalCostoProyecto.toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
@@ -659,4 +671,243 @@ function renderizarHistorialBitacoras(bitacoras) {
         order: [[0, 'desc']],
         pageLength: 25
     });
+}
+
+// =============================================
+// FUNCIONES PARA SELECCIÓN MÚLTIPLE Y CxP
+// =============================================
+
+function toggleSeleccionBitacora(bitacoraId, isChecked) {
+    if (isChecked) {
+        if (!bitacorasSeleccionadas.includes(bitacoraId)) {
+            bitacorasSeleccionadas.push(bitacoraId);
+        }
+    } else {
+        bitacorasSeleccionadas = bitacorasSeleccionadas.filter(id => id !== bitacoraId);
+    }
+    
+    actualizarBotonCxP();
+    actualizarSubtotales();
+    actualizarDeduccionesResumen();
+}
+
+function actualizarBotonCxP() {
+    const btnCxP = $('#btn_aprobar_cxp');
+    if (bitacorasSeleccionadas.length > 0) {
+        btnCxP.prop('disabled', false);
+        btnCxP.html(`<i class="fas fa-check-double"></i> Aprobar y Generar CxP (${bitacorasSeleccionadas.length})`);
+    } else {
+        btnCxP.prop('disabled', true);
+        btnCxP.html('<i class="fas fa-check-double"></i> Aprobar y Generar CxP');
+    }
+}
+
+function actualizarSubtotales() {
+    // Recalcular subtotales para cada proyecto
+    $('.card').each(function() {
+        const proyectoCard = $(this);
+        const proyectoId = proyectoCard.data('proyecto-id');
+        
+        if (proyectoId) {
+            let totalHorasSeleccionadas = 0;
+            let totalCostoSeleccionadas = 0;
+            
+            // Buscar el precio por hora del proyecto
+            const precioHora = parseFloat(proyectoCard.find('.precio-hora').data('precio') || 0);
+            
+            // Recalcular solo las bitácoras seleccionadas de este proyecto
+            proyectoCard.find('tbody tr').each(function() {
+                const row = $(this);
+                const bitacoraId = parseInt(row.data('bitacora-id'));
+                
+                if (bitacorasSeleccionadas.includes(bitacoraId)) {
+                    const horaEntrada = row.find('.hora-entrada').text();
+                    const horaSalida = row.find('.hora-salida').text();
+                    const multiplicador = parseFloat(row.find('.multiplicador').data('valor') || 1.00);
+                    
+                    const horas = calcularHoras(horaEntrada, horaSalida);
+                    const costo = horas * precioHora * multiplicador;
+                    
+                    totalHorasSeleccionadas += horas;
+                    totalCostoSeleccionadas += costo;
+                }
+            });
+            
+            // Actualizar el subtotal en el footer
+            proyectoCard.find('tfoot .subtotal-horas').text(`${totalHorasSeleccionadas.toFixed(2)} hrs`);
+            proyectoCard.find('tfoot .subtotal-costo').text(`₡${totalCostoSeleccionadas.toLocaleString('es-CR', {minimumFractionDigits: 2})}`);
+        }
+    });
+}
+
+function aprobarYGenerarCxP() {
+    if (bitacorasSeleccionadas.length === 0) {
+        showError("Debe seleccionar al menos una bitácora");
+        return;
+    }
+
+    if (!confirm(`¿Está seguro de aprobar ${bitacorasSeleccionadas.length} bitácoras y generar las Cuentas por Pagar correspondientes?\n\nNota: Se crearán CxP agrupadas por proyecto y usuario, y las bitácoras serán aprobadas automáticamente.`)) {
+        return;
+    }
+
+    generarCxP();
+}
+
+function generarCxP() {
+    // Obtener deducciones seleccionadas
+    let deducciones = [];
+    $('.checkbox-deduccion:checked').each(function() {
+        deducciones.push({
+            rubro_id: $(this).val(),
+            porcentaje: parseFloat($(this).data('porcentaje')),
+            nombre: $(this).data('nombre')
+        });
+    });
+
+    $.ajax({
+        url: `${base_path}/cxp/crear`,
+        type: 'post',
+        dataType: "json",
+        data: {
+            _token: CSRF_TOKEN,
+            bitacoras_ids: bitacorasSeleccionadas,
+            deducciones: deducciones,
+            observaciones: 'Generado automáticamente desde autorización de horas'
+        }
+    }).done(function (response) {
+        if (response['estado']) {
+            showSuccess(response['mensaje']);
+            bitacorasSeleccionadas = [];
+            actualizarBotonCxP();
+            cargarUsuariosPendientes();
+            cargarHistorialBitacoras(filtroActual);
+            $('#modal_desglose_bitacoras').modal('hide');
+            // Limpiar deducciones
+            $('.checkbox-deduccion').prop('checked', false);
+            $('#resumen_deducciones').hide();
+        } else {
+            showError(response['mensaje']);
+        }
+    }).fail(function () {
+        showError("Error al generar CxP");
+    });
+}
+
+function seleccionarTodasBitacoras() {
+    const checkboxes = $('.checkbox-bitacora:visible');
+    const todasSeleccionadas = checkboxes.length > 0 && checkboxes.filter(':checked').length === checkboxes.length;
+    
+    checkboxes.prop('checked', !todasSeleccionadas);
+    checkboxes.each(function() {
+        const bitacoraId = parseInt($(this).val());
+        toggleSeleccionBitacora(bitacoraId, !todasSeleccionadas);
+    });
+    
+    actualizarBotonCxP();
+}
+
+// Función para actualizar el resumen de deducciones
+function actualizarDeduccionesResumen() {
+    // Usar setTimeout para asegurar que el DOM se ha actualizado
+    setTimeout(function() {
+        const deduccionesSeleccionadas = $('.checkbox-deduccion:checked');
+        
+        console.log('=== ACTUALIZAR DEDUCCIONES ===');
+        console.log('Bitácoras seleccionadas:', bitacorasSeleccionadas);
+        
+        // Calcular el subtotal de las horas seleccionadas
+        let subtotal = 0;
+        bitacorasSeleccionadas.forEach(bitacoraId => {
+            const fila = $(`tr[data-bitacora-id="${bitacoraId}"]`);
+            console.log(`Buscando fila para bitácora ${bitacoraId}:`, fila.length);
+            
+            if (fila.length > 0) {
+                // Buscar el elemento con la clase costo-bitacora
+                const costoElement = fila.find('.costo-bitacora');
+                console.log(`  Elemento costo encontrado:`, costoElement.length);
+                
+                if (costoElement.length > 0) {
+                    // Usar el atributo data-costo directamente
+                    const costoData = costoElement.attr('data-costo');
+                    const costo = parseFloat(costoData);
+                    
+                    console.log(`  Costo data-costo: "${costoData}" -> parseado: ${costo}`);
+                    
+                    if (!isNaN(costo)) {
+                        subtotal += costo;
+                        console.log(`  ✓ Sumado: ${costo}, Subtotal acumulado: ${subtotal}`);
+                    } else {
+                        console.log(`  ✗ Costo no es número válido`);
+                    }
+                } else {
+                    console.log(`  ✗ No se encontró elemento .costo-bitacora`);
+                }
+            } else {
+                console.log(`  ✗ No se encontró fila con data-bitacora-id="${bitacoraId}"`);
+            }
+        });
+        
+        console.log('Subtotal final calculado:', subtotal);
+        console.log('Deducciones seleccionadas:', deduccionesSeleccionadas.length);
+        
+        // Si no hay deducciones seleccionadas, ocultar resumen
+        if (deduccionesSeleccionadas.length === 0) {
+            $('#resumen_deducciones').hide();
+            console.log('No hay deducciones, ocultando resumen');
+            console.log('==============================');
+            return;
+        }
+        
+        // Si no hay subtotal, ocultar resumen
+        if (subtotal === 0) {
+            $('#resumen_deducciones').hide();
+            console.log('⚠️ Subtotal es 0, ocultando resumen');
+            console.log('⚠️ Verificar que las bitácoras tengan la clase .costo-bitacora con data-costo');
+            console.log('==============================');
+            return;
+        }
+        
+        // Construir el detalle de deducciones
+        let detalleHTML = '';
+        let totalDeducciones = 0;
+        
+        deduccionesSeleccionadas.each(function() {
+            const nombre = $(this).data('nombre');
+            const porcentaje = parseFloat($(this).data('porcentaje'));
+            
+            if (!isNaN(porcentaje)) {
+                const montoDeduccion = (subtotal * porcentaje) / 100;
+                totalDeducciones += montoDeduccion;
+                
+                console.log(`Deducción: ${nombre} (${porcentaje}%) = ₡${montoDeduccion.toFixed(2)}`);
+                
+                detalleHTML += `
+                    <tr>
+                        <td>
+                            <i class="fas fa-arrow-right text-danger ml-2"></i> 
+                            ${nombre} <span class="badge badge-warning">${porcentaje}%</span>
+                        </td>
+                        <td class="text-right text-danger">
+                            - ₡${montoDeduccion.toLocaleString('es-CR', {minimumFractionDigits: 2})}
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+        
+        const totalFinal = subtotal - totalDeducciones;
+        
+        console.log('Total deducciones:', totalDeducciones);
+        console.log('Total final a pagar:', totalFinal);
+        
+        // Actualizar interfaz
+        $('#subtotal_horas_deducciones').text('₡' + subtotal.toLocaleString('es-CR', {minimumFractionDigits: 2}));
+        $('#detalle_deducciones').html(detalleHTML);
+        $('#total_deducciones').text('₡' + totalDeducciones.toLocaleString('es-CR', {minimumFractionDigits: 2}));
+        $('#total_final_deducciones').text('₡' + totalFinal.toLocaleString('es-CR', {minimumFractionDigits: 2}));
+        $('#resumen_deducciones').show();
+        
+        console.log('✅ Resumen actualizado y mostrado');
+        console.log('==============================');
+    }, 200); // Aumentar el timeout a 200ms
 }

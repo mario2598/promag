@@ -54,7 +54,7 @@ class GastosController extends Controller
 
     public function goEditarGastoById(Request $request)
     {
-        $id = $request->input('idGastoEditar');
+        $id = $request->input('idGastoEditar') ?? $request->input('id');
 
         $gasto = DB::table('gasto')->where('id', '=', $id)->get()->first();
         if ($gasto == null) {
@@ -84,7 +84,16 @@ class GastosController extends Controller
         $gasto = DB::table('gasto')
             ->join('usuario', 'usuario.id', '=', 'gasto.usuario')
             ->join('sis_estado', 'sis_estado.id', '=', 'gasto.estado')
-            ->select('gasto.*', 'usuario.usuario as nombreUsuario', 'sis_estado.nombre as estadoUsuario', 'sis_estado.cod_general as codEstadoUsuario')
+            ->leftJoin('sis_tipo as tipo_pago', 'tipo_pago.id', '=', 'gasto.tipo_pago')
+            ->leftJoin('sis_tipo as tipo_gasto', 'tipo_gasto.id', '=', 'gasto.tipo_gasto')
+            ->select(
+                'gasto.*', 
+                'usuario.usuario as nombreUsuario', 
+                'sis_estado.nombre as estadoUsuario', 
+                'sis_estado.cod_general as codEstadoUsuario',
+                'tipo_pago.nombre as tipo_pago_nombre',
+                'tipo_gasto.nombre as tipo_gasto_nombre'
+            )
             ->where('gasto.id', '=', $id)->get()->first();
 
         if ($gasto == null) {
@@ -99,10 +108,39 @@ class GastosController extends Controller
 
         $gasto->fecha = $this->fechaFormat($gasto->fecha);
 
+        // Obtener CxP relacionadas con este gasto
+        $cxps = DB::table('cxp')
+            ->leftJoin('sis_tipo', 'sis_tipo.id', '=', 'cxp.tipo_cxp')
+            ->leftJoin('sis_estado', 'sis_estado.id', '=', 'cxp.estado')
+            ->where('cxp.gasto', '=', $id)
+            ->select(
+                'cxp.*',
+                'sis_tipo.nombre as tipo_nombre',
+                'sis_estado.nombre as estado_nombre',
+                'sis_estado.cod_general as estado_codigo'
+            )
+            ->get();
+
+        // Para cada CxP, obtener sus deducciones
+        foreach ($cxps as $cxp) {
+            $deducciones = DB::table('cxp_deduccion')
+                ->leftJoin('rubro_deduccion_salario', 'rubro_deduccion_salario.id', '=', 'cxp_deduccion.rubro_deduccion')
+                ->where('cxp_deduccion.cxp', $cxp->id)
+                ->select(
+                    'cxp_deduccion.*',
+                    'rubro_deduccion_salario.nombre as rubro_nombre',
+                    'rubro_deduccion_salario.descripcion as rubro_descripcion'
+                )
+                ->get();
+            
+            $cxp->deducciones = $deducciones;
+        }
+
         $data = [
             
             'proveedores' => $this->getProveedores(),
             'gasto' => $gasto,
+            'cxps' => $cxps,
             'tipos_pago' => $this->getTiposPago(),
             'tipos_gasto' => $this->getTiposGasto()
         ];
@@ -116,7 +154,16 @@ class GastosController extends Controller
         $gasto = DB::table('gasto')
             ->join('usuario', 'usuario.id', '=', 'gasto.usuario')
             ->join('sis_estado', 'sis_estado.id', '=', 'gasto.estado')
-            ->select('gasto.*', 'usuario.usuario as nombreUsuario', 'sis_estado.nombre as estadoUsuario', 'sis_estado.cod_general as codEstadoUsuario')
+            ->leftJoin('sis_tipo as tipo_pago', 'tipo_pago.id', '=', 'gasto.tipo_pago')
+            ->leftJoin('sis_tipo as tipo_gasto', 'tipo_gasto.id', '=', 'gasto.tipo_gasto')
+            ->select(
+                'gasto.*', 
+                'usuario.usuario as nombreUsuario', 
+                'sis_estado.nombre as estadoUsuario', 
+                'sis_estado.cod_general as codEstadoUsuario',
+                'tipo_pago.nombre as tipo_pago_nombre',
+                'tipo_gasto.nombre as tipo_gasto_nombre'
+            )
             ->where('gasto.id', '=', $id)->get()->first();
         if ($gasto == null) {
             $this->setError("No encontrado", "No se encontro el gasto..");
@@ -125,10 +172,39 @@ class GastosController extends Controller
 
         $gasto->fecha = $this->fechaFormat($gasto->fecha);
 
+        // Obtener CxP relacionadas con este gasto
+        $cxps = DB::table('cxp')
+            ->leftJoin('sis_tipo', 'sis_tipo.id', '=', 'cxp.tipo_cxp')
+            ->leftJoin('sis_estado', 'sis_estado.id', '=', 'cxp.estado')
+            ->where('cxp.gasto', '=', $id)
+            ->select(
+                'cxp.*',
+                'sis_tipo.nombre as tipo_nombre',
+                'sis_estado.nombre as estado_nombre',
+                'sis_estado.cod_general as estado_codigo'
+            )
+            ->get();
+
+        // Para cada CxP, obtener sus deducciones
+        foreach ($cxps as $cxp) {
+            $deducciones = DB::table('cxp_deduccion')
+                ->leftJoin('rubro_deduccion_salario', 'rubro_deduccion_salario.id', '=', 'cxp_deduccion.rubro_deduccion')
+                ->where('cxp_deduccion.cxp', $cxp->id)
+                ->select(
+                    'cxp_deduccion.*',
+                    'rubro_deduccion_salario.nombre as rubro_nombre',
+                    'rubro_deduccion_salario.descripcion as rubro_descripcion'
+                )
+                ->get();
+            
+            $cxp->deducciones = $deducciones;
+        }
+
         $data = [
             
             'proveedores' => $this->getProveedores(),
             'gasto' => $gasto,
+            'cxps' => $cxps,
             'tipos_pago' => $this->getTiposPago(),
             'tipos_gasto' => $this->getTiposGasto()
         ];
@@ -223,7 +299,9 @@ class GastosController extends Controller
         $gastos = $gastos->get();
         $totalGastos = 0;
         foreach ($gastos as $i) {
-            $totalGastos = $totalGastos + $i->monto;
+            // Convertir a CRC: monto * tipo_cambio
+            $montoEnCRC = $i->monto * ($i->tipo_cambio ?? 1.0000);
+            $totalGastos = $totalGastos + $montoEnCRC;
         }
        
         $filtros1 = [
@@ -282,6 +360,10 @@ class GastosController extends Controller
                 $fecha_actual = $fecha;
             }
             $tipo_gasto = $request->input('tipo_gasto') ?? 1;
+            
+            // Campos de moneda
+            $codigo_moneda = $request->input('codigo_moneda') ?? 'CRC';
+            $tipo_cambio = $request->input('tipo_cambio') ?? 1.0000;
 
             $ingreso = -1;
 
@@ -296,16 +378,18 @@ class GastosController extends Controller
                         ->update([
                             'monto' => $total, 'descripcion' => $descripcion, 'num_factura' => $num_comprobante,
                             'proveedor' => $proveedor,
-                            'tipo_pago' => $tipo_pago, 'tipo_documento' => $tipo_documento, 'tipo_gasto' => $tipo_gasto,
-                            'observacion' => $observacion, 'sucursal' => $sucursal->id
+                            'tipo_pago' => $tipo_pago, 'tipo_gasto' => $tipo_gasto,
+                            'observacion' => $observacion, 'sucursal' => $sucursal->id,
+                            'codigo_moneda' => $codigo_moneda, 'tipo_cambio' => $tipo_cambio
                         ]);
                 } else { // Nuevo gasto
                     $id = DB::table('gasto')->insertGetId([
                         'id' => null, 'monto' => $total, 'descripcion' => $descripcion, 'num_factura' => $num_comprobante,
                         'usuario' => $usuarioId, 'proveedor' => $proveedor, 'fecha' => $fecha_actual,
-                        'tipo_pago' => $tipo_pago, 'tipo_documento' => $tipo_documento, 'tipo_gasto' => $tipo_gasto,
+                        'tipo_pago' => $tipo_pago, 'tipo_gasto' => $tipo_gasto,
                         'aprobado' =>'', 'observacion' => $observacion,  'sucursal' => $sucursal->id, 'ingreso' => $ingreso,
-                        'url_factura' => null,'estado' => SisEstadoController::getIdEstadoByCodGeneral("EST_GASTO_APB")
+                        'url_factura' => null,'estado' => SisEstadoController::getIdEstadoByCodGeneral("EST_GASTO_APB"),
+                        'codigo_moneda' => $codigo_moneda, 'tipo_cambio' => $tipo_cambio
                     ]);
 
                     $image = $request->file('foto_comprobante');
@@ -320,8 +404,6 @@ class GastosController extends Controller
                         DB::table('gasto')
                             ->where('id', '=', $id)->update(['url_factura' => $url_factura]);
                     }
-
-                    $this->bitacoraMovimientos('gasto', 'nuevo', $id, $total, $fecha_actual);
                 }
 
                 DB::commit();
@@ -345,9 +427,10 @@ class GastosController extends Controller
                     return $this->returnNuevoGastoWithData($request->all());
                 }
             }
+           
         } else {
             if ($actualizar) { // Editar usuario
-                return $this->goEditarGastoById($id);
+                return $this->goEditarGastoById($request);
             } else { // Nuevo usuario
                 return $this->returnNuevoGastoWithData($request->all());
             }

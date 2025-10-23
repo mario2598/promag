@@ -121,6 +121,9 @@
                                                 Monto
                                             </th>
                                             <th class="text-center">
+                                                Moneda
+                                            </th>
+                                            <th class="text-center">
                                                 Usuario
                                             </th>
                                             <th class="text-center">Sucursal</th>
@@ -136,7 +139,18 @@
 
                                                 <td class="text-center">{{ $g->nombre_tipo_ingreso ?? '' }}</td>
                                                 <td class="text-center">
-                                                    CRC {{ number_format($g->total ?? '0.00', 2, '.', ',') }}
+                                                    @if(($g->codigo_moneda ?? 'CRC') == 'CRC')
+                                                        {{ number_format($g->total ?? '0.00', 2, '.', ',') }}
+                                                    @else
+                                                        {{ number_format($g->total ?? '0.00', 2, '.', ',') }} {{ $g->codigo_moneda ?? 'CRC' }}
+                                                        <br><small class="text-muted">CRC {{ number_format(($g->total ?? 0) * ($g->tipo_cambio ?? 1.0000), 2, '.', ',') }}</small>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge badge-info">{{ $g->codigo_moneda ?? 'CRC' }}</span>
+                                                    @if(($g->codigo_moneda ?? 'CRC') != 'CRC')
+                                                        <br><small class="text-muted">TC: {{ number_format($g->tipo_cambio ?? 1.0000, 4) }}</small>
+                                                    @endif
                                                 </td>
                                                 <td class="text-center">
                                                     {{ $g->nombreUsuario ?? '' }}
@@ -164,11 +178,11 @@
                                                     <strong>Total General</strong>
                                                 </td>
                                                 <td class="text-center" style="background: rgb(226, 196, 196);">
-                                                    <strong> CRC
-                                                        {{ number_format($data['totalIngresos'] ?? '0.00', 2, '.', ',') }}</strong>
+                                                    <strong>CRC {{ number_format($data['totalIngresos'] ?? '0.00', 2, '.', ',') }}</strong>
+                                                    <br><small class="text-muted">Total en colones</small>
                                                 </td>
                                                 <td class="text-center" style="background: rgb(226, 196, 196);">
-                                                    ***
+                                                    <strong>***</strong>
                                                 </td>
                                                 <td class="text-center" style="background: rgb(226, 196, 196);">
                                                     <strong> ***</strong>
@@ -178,6 +192,7 @@
 
                                                     <strong>***</strong>
                                                 </td>
+                                                <td class="text-center" style="background: rgb(226, 196, 196);">***</td>
                                                 <td class="text-center" style="background: rgb(226, 196, 196);">***</td>
 
 

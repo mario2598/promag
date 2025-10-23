@@ -47,29 +47,26 @@ class IngresosController extends Controller
         }
 
         
-        $caja = CajaController::getByIdIngreso($id);
+        // $caja = CajaController::getByIdIngreso($id);
+        // TODO: Implementar CajaController o eliminar esta funcionalidad
+        $efectivoReportado = null;
 
-        if ($caja == null) {
-            $efectivoReportado = null;
-        }else{
-            $efectivoReportado = $caja->efectivo_reportado ?? 0;
-        }
+        // $ventas = DB::table('orden')
+        //     ->leftjoin('sis_estado', 'sis_estado.id', '=', 'orden.estado')
+        //     ->select('orden.*', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general')
+        //     ->where('orden.ingreso', '=', $id)->get();
+        // TODO: Implementar tabla orden o eliminar esta funcionalidad
+        $ventas = collect();
+        $tieneVentas = false;
 
-        $ventas = DB::table('orden')
-            ->leftjoin('sis_estado', 'sis_estado.id', '=', 'orden.estado')
-            ->select('orden.*', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general')
-            ->where('orden.ingreso', '=', $id)->get();
-
-        $tieneVentas = count($ventas) > 0;
-
-        foreach ($ventas as $v) {
-            $v->fecha_inicio = $this->fechaFormat($v->fecha_inicio);
-            $v->fecha_preparado = $this->fechaFormat($v->fecha_preparado);
-            $v->fecha_entregado = $this->fechaFormat($v->fecha_entregado);
-            $v->detalles =  DB::table('detalle_orden')
-                ->select('detalle_orden.*')
-                ->where('detalle_orden.orden', '=', $v->id)->get();
-        }
+        // foreach ($ventas as $v) {
+        //     $v->fecha_inicio = $this->fechaFormat($v->fecha_inicio);
+        //     $v->fecha_preparado = $this->fechaFormat($v->fecha_preparado);
+        //     $v->fecha_entregado = $this->fechaFormat($v->fecha_entregado);
+        //     $v->detalles =  DB::table('detalle_orden')
+        //         ->select('detalle_orden.*')
+        //         ->where('detalle_orden.orden', '=', $v->id)->get();
+        // }
 
         $ingreso->fecha = $this->fechaFormat($ingreso->fecha);
 
@@ -111,29 +108,26 @@ class IngresosController extends Controller
         }
 
         
-        $caja = CajaController::getByIdIngreso($id);
+        // $caja = CajaController::getByIdIngreso($id);
+        // TODO: Implementar CajaController o eliminar esta funcionalidad
+        $efectivoReportado = null;
 
-        if ($caja == null) {
-            $efectivoReportado = null;
-        }else{
-            $efectivoReportado = $caja->efectivo_reportado ?? 0;
-        }
+        // $ventas = DB::table('orden')
+        //     ->leftjoin('sis_estado', 'sis_estado.id', '=', 'orden.estado')
+        //     ->select('orden.*', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general')
+        //     ->where('orden.ingreso', '=', $id)->get();
+        // TODO: Implementar tabla orden o eliminar esta funcionalidad
+        $ventas = collect();
+        $tieneVentas = false;
 
-        $ventas = DB::table('orden')
-            ->leftjoin('sis_estado', 'sis_estado.id', '=', 'orden.estado')
-            ->select('orden.*', 'sis_estado.nombre as dscEstado', 'sis_estado.cod_general as cod_general')
-            ->where('orden.ingreso', '=', $id)->get();
-
-        $tieneVentas = count($ventas) > 0;
-
-        foreach ($ventas as $v) {
-            $v->fecha_inicio = $this->fechaFormat($v->fecha_inicio);
-            $v->fecha_preparado = $this->fechaFormat($v->fecha_preparado);
-            $v->fecha_entregado = $this->fechaFormat($v->fecha_entregado);
-            $v->detalles =  DB::table('detalle_orden')
-                ->select('detalle_orden.*')
-                ->where('detalle_orden.orden', '=', $v->id)->get();
-        }
+        // foreach ($ventas as $v) {
+        //     $v->fecha_inicio = $this->fechaFormat($v->fecha_inicio);
+        //     $v->fecha_preparado = $this->fechaFormat($v->fecha_preparado);
+        //     $v->fecha_entregado = $this->fechaFormat($v->fecha_entregado);
+        //     $v->detalles =  DB::table('detalle_orden')
+        //         ->select('detalle_orden.*')
+        //         ->where('detalle_orden.orden', '=', $v->id)->get();
+        // }
 
         $ingreso->fecha = $this->fechaFormat($ingreso->fecha);
 
@@ -247,7 +241,10 @@ class IngresosController extends Controller
             $efectivo = $i->monto_efectivo ?? 0;
             $tarjeta = $i->monto_tarjeta ?? 0;
             $i->total = $sinpe + $efectivo + $tarjeta;
-            $totalIngresos = $totalIngresos + $i->total;
+            
+            // Convertir a CRC: total * tipo_cambio
+            $totalEnCRC = $i->total * ($i->tipo_cambio ?? 1.0000);
+            $totalIngresos = $totalIngresos + $totalEnCRC;
             $i->fecha = $this->fechaFormat($i->fecha);
         }
 
@@ -292,12 +289,13 @@ class IngresosController extends Controller
             ->where('ingreso.estado', '=', SisEstadoController::getIdEstadoByCodGeneral("ING_PEND_APB"))->orderby('ingreso.id', 'desc')->get();
 
         foreach ($ingresosSinAprobar as $i) {
-            $caja = CajaController::getByIdIngreso($i->id);
-            if($caja != null){
-                $efectivo = $caja->efectivo_reportado ?? 0;
-            }else{
+            // $caja = CajaController::getByIdIngreso($i->id);
+            // TODO: Implementar CajaController o eliminar esta funcionalidad
+            // if($caja != null){
+            //     $efectivo = $caja->efectivo_reportado ?? 0;
+            // }else{
                 $efectivo = $i->monto_efectivo ?? 0;
-            }
+            // }
             $sinpe = $i->monto_sinpe ?? 0;
             $tarjeta = $i->monto_tarjeta ?? 0;
             $i->subTotal = $sinpe + $efectivo + $tarjeta;
@@ -361,6 +359,10 @@ class IngresosController extends Controller
             $descripcion = $request->input('descripcion');
             $cliente = $request->input('cliente');
             $fecha = $request->input('fecha');
+            
+            // Campos de moneda
+            $codigo_moneda = $request->input('codigo_moneda') ?? 'CRC';
+            $tipo_cambio = $request->input('tipo_cambio') ?? 1.0000;
             $cliente = ($cliente == "null") ? null : $cliente;
             $fecha_actual = date("Y-m-d H:i:s");
             $estado = SisEstadoController::getIdEstadoByCodGeneral("ING_EST_APROBADO");
@@ -372,9 +374,10 @@ class IngresosController extends Controller
                         'monto_efectivo' => $monto_efectivo,
                         'monto_tarjeta' => $monto_tarjeta,
                         'monto_sinpe' => $monto_sinpe,
-                        'observacion' => $observacion
+                        'observacion' => $observacion,
+                        'codigo_moneda' => $codigo_moneda,
+                        'tipo_cambio' => $tipo_cambio
                     ]);
-                    $this->bitacoraMovimientos('ingreso', 'editar', $id, $total);
                 } else {
                     $idIngreso = DB::table('ingreso')->insertGetId([
                         'id' => null,
@@ -387,9 +390,10 @@ class IngresosController extends Controller
                         'observacion' => $observacion,
                         'sucursal' => $sucursal,
                         'estado' => $estado,
-                        'descripcion' => $descripcion
+                        'descripcion' => $descripcion,
+                        'codigo_moneda' => $codigo_moneda,
+                        'tipo_cambio' => $tipo_cambio
                     ]);
-                    $this->bitacoraMovimientos('ingreso', 'nuevo', $idIngreso, $total, $fecha_actual);
                 }
 
                 DB::commit();
@@ -427,7 +431,9 @@ class IngresosController extends Controller
         $cliente = null,
         $fecha = null,
         $idSucursal = null,
-        $doc_referencia = null
+        $doc_referencia = null,
+        $codigo_moneda = 'CRC',
+        $tipo_cambio = 1.0000
     ) {
         // Validación manual (puedes adaptar este código según tus necesidades de validación)
         if ($this->validarIngresoArr(compact('monto_efectivo', 'monto_sinpe', 'monto_tarjeta', 'observacion', 'tipo_ingreso', 'descripcion', 'cliente', 'fecha'))) {
@@ -452,7 +458,9 @@ class IngresosController extends Controller
                     'estado' => $estado,
                     'descripcion' => $descripcion,
                     'cliente' => $cliente,
-                    'doc_referencia' => $doc_referencia
+                    'doc_referencia' => $doc_referencia,
+                    'codigo_moneda' => $codigo_moneda,
+                    'tipo_cambio' => $tipo_cambio
                 ]);
 
                 // Registrar el movimiento en la bitácora
