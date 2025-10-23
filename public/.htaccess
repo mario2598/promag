@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Convert HEAD requests to GET
+    RewriteCond %{REQUEST_METHOD} ^HEAD$
+    RewriteRule ^(.*)$ - [E=REQUEST_METHOD:GET]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

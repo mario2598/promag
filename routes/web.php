@@ -18,8 +18,8 @@
 
 Route::group([], function () {
     Route::post('login', 'LogInController@logIn');
-    Route::get('login', 'LogInController@index');
-    Route::get('/', 'LogInController@index');
+    Route::match(['GET', 'HEAD'], 'login', 'LogInController@index');
+    Route::match(['GET', 'HEAD'], '/', 'LogInController@index');
     Route::get('logOut', 'LogInController@logOut');
 });
 

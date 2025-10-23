@@ -25,12 +25,17 @@ trait AuthUtil
       if ($usuarioSession['id'] == null) {
         return false;
       }
-      $usuario = DB::table('usuario')
-        ->join('rol', 'rol.id', '=', 'usuario.rol')
-        ->select('usuario.*', 'rol.id as rol_id', 'rol.rol as rol_rol')
-       // ->where('usuario.token_auth', '=', $usuarioSession['token'] ?? '')
-        ->where('usuario.id', '=', $usuarioSession['id'] ?? '')
-        ->get()->first();
+      try {
+        $usuario = DB::table('usuario')
+          ->join('rol', 'rol.id', '=', 'usuario.rol')
+          ->select('usuario.*', 'rol.id as rol_id', 'rol.rol as rol_rol')
+         // ->where('usuario.token_auth', '=', $usuarioSession['token'] ?? '')
+          ->where('usuario.id', '=', $usuarioSession['id'] ?? '')
+          ->get()->first();
+      } catch (QueryException $ex) {
+        // Si hay error en la consulta, probablemente falta el campo nombre_banco
+        return false;
+      }
 
       if ($usuario == null) {
         return false;
@@ -66,13 +71,18 @@ trait AuthUtil
         return false;
       }
 
-      $usuario = DB::table('usuario')
-        ->join('rol', 'rol.id', '=', 'usuario.rol')
-        ->select('usuario.*', 'rol.id as rol_id', 'rol.rol as rol_rol')
-        //->where('usuario.token_auth', '=', $usuarioSession['token'] ?? '')
-        ->where('usuario.id', '=', $usuarioSession['id'] ?? '')
-        ->where('rol.estado', '=', 'A')
-        ->get()->first();
+      try {
+        $usuario = DB::table('usuario')
+          ->join('rol', 'rol.id', '=', 'usuario.rol')
+          ->select('usuario.*', 'rol.id as rol_id', 'rol.rol as rol_rol')
+          //->where('usuario.token_auth', '=', $usuarioSession['token'] ?? '')
+          ->where('usuario.id', '=', $usuarioSession['id'] ?? '')
+          ->where('rol.estado', '=', 'A')
+          ->get()->first();
+      } catch (QueryException $ex) {
+        // Si hay error en la consulta, probablemente falta el campo nombre_banco
+        return false;
+      }
 
       if ($usuario == null) {
         return false;
