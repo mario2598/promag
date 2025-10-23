@@ -24,10 +24,9 @@ Route::group([], function () {
 });
 
 
-Route::group(['middleware' => 'autorizated'], function () {
+// Temporalmente sin middleware para debug
+Route::group([], function () {
     Route::get('/perfil/usuario', 'PerfilUsuarioController@goPerfilUsuario');
-    Route::post('/perfil/usuario/guardar', 'MantenimientoUsuariosController@guardarUsuarioPerfilAjax');
-    Route::post('/perfil/usuario/seg', 'PerfilUsuarioController@cambiarContraPerfil');
     Route::post('/perfil/usuario/guardar', 'MantenimientoUsuariosController@guardarUsuarioPerfilAjax');
     Route::post('/perfil/usuario/seg', 'PerfilUsuarioController@cambiarContraPerfil');
     Route::post('mant/usuarios/cargarUsuario', 'MantenimientoUsuariosController@cargarUsuarioAjax');
