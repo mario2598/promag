@@ -14,7 +14,8 @@ var usuarioGestion = {
     "tip_u_co": "U_A_G",
     "precio_hora": 0,
     "nombre_beneficiario": "",
-    "numero_cuenta": ""
+    "numero_cuenta": "",
+    "nombre_banco": ""
 };
 
 $(document).ready(function () {
@@ -70,7 +71,8 @@ function cargarUsuarioGestion(usuarioAux) {
         "tip_u_co": "U_A_G",
         "precio_hora": usuarioAux.precio_hora ?? 0,
         "nombre_beneficiario": usuarioAux.nombre_beneficiario ?? "",
-        "numero_cuenta": usuarioAux.numero_cuenta ?? ""
+        "numero_cuenta": usuarioAux.numero_cuenta ?? "",
+        "nombre_banco": usuarioAux.nombre_banco ?? ""
     };
 
 }
@@ -95,7 +97,8 @@ function cargarUsuarioNuevo() {
         "tip_u_co": "U_A_G",
         "precio_hora": 0,
         "nombre_beneficiario": "",
-        "numero_cuenta": ""
+        "numero_cuenta": "",
+        "nombre_banco": ""
     };
 }
 
@@ -116,6 +119,7 @@ function cargarHtmlUsuario() {
     $('#precio_hora').val(usuarioGestion.precio_hora != null ? usuarioGestion.precio_hora : 0);
     $('#nombre_beneficiario').val(usuarioGestion.nombre_beneficiario != null ? usuarioGestion.nombre_beneficiario : "");
     $('#numero_cuenta').val(usuarioGestion.numero_cuenta != null ? usuarioGestion.numero_cuenta : "");
+    $('#nombre_banco').val(usuarioGestion.nombre_banco != null ? usuarioGestion.nombre_banco : "");
     $('#contra').prop('readonly', usuarioGestion.id != null);
     if (usuarioGestion.id != 0) {
         $('#lblCambiarPss').fadeIn();
@@ -141,6 +145,7 @@ function cargarUsuarioHtml() {
     usuarioGestion.tip_u_co = "U_A_G";
     usuarioGestion.nombre_beneficiario = $('#nombre_beneficiario').val();
     usuarioGestion.numero_cuenta = $('#numero_cuenta').val();
+    usuarioGestion.nombre_banco = $('#nombre_banco').val();
 }
 
 function initialice() {

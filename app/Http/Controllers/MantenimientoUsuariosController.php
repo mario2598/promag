@@ -297,6 +297,7 @@ class MantenimientoUsuariosController extends Controller
             $precio_hora = $usuarioR['precio_hora'] ?? 0;
             $nombre_beneficiario = $usuarioR['nombre_beneficiario'] ?? null;
             $numero_cuenta = $usuarioR['numero_cuenta'] ?? null;
+            $nombre_banco = $usuarioR['nombre_banco'] ?? null;
 
             $rol = $usuarioR['rol'];
             try {
@@ -318,7 +319,8 @@ class MantenimientoUsuariosController extends Controller
                             'rol' => $rol,
                             'precio_hora' => $precio_hora,
                             'nombre_beneficiario' => $nombre_beneficiario,
-                            'numero_cuenta' => $numero_cuenta
+                            'numero_cuenta' => $numero_cuenta,
+                            'nombre_banco' => $nombre_banco
                         ]);
                 } else { // Nuevo usuario
                     $id = DB::table('usuario')->insertGetId([
@@ -338,7 +340,8 @@ class MantenimientoUsuariosController extends Controller
                         'estado' => SisEstadoController::getIdEstadoByCodGeneral("USU_ACT"),
                         'precio_hora' => $precio_hora,
                         'nombre_beneficiario' => $nombre_beneficiario,
-                        'numero_cuenta' => $numero_cuenta
+                        'numero_cuenta' => $numero_cuenta,
+                        'nombre_banco' => $nombre_banco
                     ]);
 
                     DB::table('panel_configuraciones')->insertGetId([
@@ -384,6 +387,9 @@ class MantenimientoUsuariosController extends Controller
             $ape2 = $usuarioR['ape2'];
             $telefono = $usuarioR['telefono'];
             $nacimiento = $usuarioR['fecha_nacimiento'];
+            $nombre_beneficiario = $usuarioR['nombre_beneficiario'] ?? null;
+            $numero_cuenta = $usuarioR['numero_cuenta'] ?? null;
+            $nombre_banco = $usuarioR['nombre_banco'] ?? null;
 
             try {
                 DB::beginTransaction();
@@ -395,7 +401,10 @@ class MantenimientoUsuariosController extends Controller
                         'ape1' => $ape1,
                         'ape2' => $ape2,
                         'fecha_nacimiento' => $nacimiento,
-                        'telefono' => $telefono
+                        'telefono' => $telefono,
+                        'nombre_beneficiario' => $nombre_beneficiario,
+                        'numero_cuenta' => $numero_cuenta,
+                        'nombre_banco' => $nombre_banco
                     ]);
 
                 DB::commit();

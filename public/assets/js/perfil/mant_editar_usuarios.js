@@ -8,7 +8,10 @@ var usuarioGestion = {
     "telefono": "",
     "fecha_nacimiento": "",
     "usuario": "",
-    "correo": ""
+    "correo": "",
+    "nombre_beneficiario": "",
+    "numero_cuenta": "",
+    "nombre_banco": ""
 };
 
 var usuarioGuarda = {
@@ -20,7 +23,10 @@ var usuarioGuarda = {
     "fecha_nacimiento": "",
     "cedula": "",
     "correo": "",
-    "usuario": ""
+    "usuario": "",
+    "nombre_beneficiario": "",
+    "numero_cuenta": "",
+    "nombre_banco": ""
 };
 
 $(document).ready(function () {
@@ -67,7 +73,10 @@ function cargarUsuarioGestion(usuarioAux) {
         "telefono": usuarioAux.telefono,
         "fecha_nacimiento": usuarioAux.fecha_nacimiento,
         "usuario": usuarioAux.usuario,
-        "correo": usuarioAux.correo
+        "correo": usuarioAux.correo,
+        "nombre_beneficiario": usuarioAux.nombre_beneficiario ?? "",
+        "numero_cuenta": usuarioAux.numero_cuenta ?? "",
+        "nombre_banco": usuarioAux.nombre_banco ?? ""
     };
 
 }
@@ -84,6 +93,9 @@ function cargarHtmlUsuario() {
     $('#contra').val("***");
     $('#correo').val(usuarioGestion.correo != null ? usuarioGestion.correo : "");
     $('#sucursal').val(usuarioGestion.sucursal != null ? usuarioGestion.sucursal : "");
+    $('#nombre_beneficiario').val(usuarioGestion.nombre_beneficiario != null ? usuarioGestion.nombre_beneficiario : "");
+    $('#numero_cuenta').val(usuarioGestion.numero_cuenta != null ? usuarioGestion.numero_cuenta : "");
+    $('#nombre_banco').val(usuarioGestion.nombre_banco != null ? usuarioGestion.nombre_banco : "");
     $('#contra').prop('readonly', usuarioGestion.id != null);
     if(usuarioGestion.id != 0){
       $('#lblCambiarPss').fadeIn();
@@ -103,6 +115,9 @@ function cargarUsuarioHtml() {
     usuarioGuarda.correo = $('#correo').val();
     usuarioGuarda.cedula = $('#cedula').val();
     usuarioGuarda.usuario = $('#usuario').val();
+    usuarioGuarda.nombre_beneficiario = $('#nombre_beneficiario').val();
+    usuarioGuarda.numero_cuenta = $('#numero_cuenta').val();
+    usuarioGuarda.nombre_banco = $('#nombre_banco').val();
 }
 
 function initialice() {

@@ -124,6 +124,72 @@
 
                             </div>
                         </div>
+                        
+                        <!-- Información de Beneficiario -->
+                        <div class="col-12">
+                            <hr>
+                            <h6><i class="fas fa-user-check"></i> Información de Beneficiario para Pagos</h6>
+                        </div>
+                        
+                        <!-- nombre beneficiario -->
+                        <div class="col-sm-12 col-md-6 col-xl-4">
+                            <div class="form-group">
+                                <label>Nombre del Beneficiario</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="nombre_beneficiario" name="nombre_beneficiario" 
+                                        value="{{ $data['usuario']->nombre_beneficiario ?? '' }}"
+                                        maxlength="200" placeholder="Nombre completo para recibir pagos">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Nombre que aparecerá en las CxP generadas
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- numero cuenta -->
+                        <div class="col-sm-12 col-md-6 col-xl-4">
+                            <div class="form-group">
+                                <label>Número de Cuenta</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text">
+                                            <i class="fas fa-university"></i>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="numero_cuenta" name="numero_cuenta" 
+                                        value="{{ $data['usuario']->numero_cuenta ?? '' }}"
+                                        maxlength="50" placeholder="Número de cuenta bancaria">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Número de cuenta para transferencias
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- nombre banco -->
+                        <div class="col-sm-12 col-md-6 col-xl-4">
+                            <div class="form-group">
+                                <label>Nombre del Banco</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="nombre_banco" name="nombre_banco" 
+                                        value="{{ $data['usuario']->nombre_banco ?? '' }}"
+                                        maxlength="100" placeholder="Nombre del banco">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Banco donde está la cuenta
+                                </small>
+                            </div>
+                        </div>
                        
                         <input type="hidden" name="id" id="id" value="{{ $data['usuario']->id ?? '' }}">
                         <!-- enviar -->

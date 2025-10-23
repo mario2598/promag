@@ -210,7 +210,8 @@ CREATE TABLE `usuario` (
   `token_auth` varchar(100) DEFAULT NULL,
   `precio_hora` double DEFAULT 0,
   `nombre_beneficiario` varchar(200) DEFAULT NULL COMMENT 'Nombre del beneficiario para pagos',
-  `numero_cuenta` varchar(50) DEFAULT NULL COMMENT 'Número de cuenta bancaria'
+  `numero_cuenta` varchar(50) DEFAULT NULL COMMENT 'Número de cuenta bancaria',
+  `nombre_banco` varchar(100) DEFAULT NULL COMMENT 'Nombre del banco del beneficiario'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `usuario` (`id`, `nombre`, `ape1`, `ape2`, `cedula`, `fecha_nacimiento`, `fecha_ingreso`, `correo`, `telefono`, `usuario`, `contra`, 
@@ -242,9 +243,6 @@ INSERT INTO `vista` (`id`, `titulo`, `ruta`, `tipo`, `codigo_grupo`, `orden`, `p
 (4, 'Sucursales', 'mant/sucursales', 'M', 'mant', 3, 1, 'mantSuc', '', 0),
 (5, 'Proveedores', 'mant/proveedores', 'M', 'mant', 4, 1, 'mantPro', '', 0),
 (6, 'Impuestos', 'mant/impuestos', 'M', 'mant', 7, 1, 'mantImp', '', 0),
-(7, 'Tipos de Gastos', 'mant/tiposgasto', 'M', 'mant', 9, 1, 'mantTipGast', '', 0),
-(8, 'Tipos de Pagos', 'mant/tipospago', 'M', 'mant', 10, 1, 'mantTipPag', '', 0),
-(9, 'Tipos de Ingreso', 'mant/tiposingreso', 'M', 'mant', 11, 1, 'mantTipIng', '', 0),
 (10, 'Gastos', '', 'G', 'gastos', 0, 3, 'gastos', 'fas fa-file-export', 0),
 (11, 'Registrar', 'gastos/nuevo', 'M', 'gastos', 1, 3, 'gastNue', '', 0),
 (12, 'Todos los gastos', 'gastos/administracion', 'M', 'gastos', 3, 3, 'gastTodos', '', 0),

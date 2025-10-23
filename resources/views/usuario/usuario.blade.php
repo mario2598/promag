@@ -208,10 +208,31 @@
                                         </div>
                                     </div>
                                     <input type="text" class="form-control" id="numero_cuenta" name="numero_cuenta" 
+                                        value="{{ $data['usuario']->numero_cuenta ?? '' }}"
                                         maxlength="50" placeholder="Número de cuenta bancaria">
                                 </div>
                                 <small class="form-text text-muted">
                                     Número de cuenta para transferencias
+                                </small>
+                            </div>
+                        </div>
+                        
+                        <!-- nombre banco -->
+                        <div class="col-sm-12 col-md-6 col-xl-4">
+                            <div class="form-group">
+                                <label>Nombre del Banco</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <div class="input-group-text">
+                                            <i class="fas fa-building"></i>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="nombre_banco" name="nombre_banco" 
+                                        value="{{ $data['usuario']->nombre_banco ?? '' }}"
+                                        maxlength="100" placeholder="Nombre del banco">
+                                </div>
+                                <small class="form-text text-muted">
+                                    Banco donde está la cuenta
                                 </small>
                             </div>
                         </div>
