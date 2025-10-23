@@ -134,11 +134,6 @@ Route::group(['middleware' => 'autorizated:mantClientes'], function () {
     Route::post('mant/clientes/guardar-info-fe-cliente', 'MantenimientoClientesController@guardarInfoFECliente');
 });
 
-Route::group(['middleware' => 'autorizated:prod_mnu'], function () {
-    Route::post('productos/guardarConfigFE', 'FeController@guardarConfigFE');
-    Route::get('productos/cargarDatosFE', 'FeController@cargarDatosFEProducto');
-});
-
 /*
 |--------------------------------------------------------------------------
 | Mantenimiento de Proyectos
@@ -230,10 +225,6 @@ Route::get('mant/proveedores', 'MantenimientoProveedorController@index');
 Route::post('guardarproveedor', 'MantenimientoProveedorController@guardarProveedor');
 Route::post('eliminarproveedor', 'MantenimientoProveedorController@eliminarProveedor');
 
-/*** Bancos */
-Route::get('mant/bancos', 'MantenimientoBancoController@index');
-Route::post('guardarbanco', 'MantenimientoBancoController@guardarBanco');
-Route::post('eliminarbanco', 'MantenimientoBancoController@eliminarBanco');
 
 /*** Bancos */
 Route::get('mant/roles', 'MantenimientoRolesController@index');
