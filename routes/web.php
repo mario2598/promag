@@ -257,11 +257,3 @@ Route::get('usuario', function () {
 Route::post('informes/resumencontable/filtro', 'InformesController@goResumenContableFiltro');
 Route::get('informes/resumencontable', 'InformesController@goResumenContable');
 
-/** CLIENTE*/
-// Route::get('cliente/registro', 'ClienteController@goRegistro');
-// Route::post('cliente/registrarse', 'ClienteController@registrarCliente');
-// Route::get('cliente/login', 'ClienteController@goLogin');
-// Route::get('cliente/login/recuperarPassword', 'ClienteController@goRecuperarPassword');
-// Route::post('cliente/login/solicitarNuevaPassword', 'ClienteController@solicitarNuevaPassword');
-// Route::post('cliente/verificaCta', 'ClienteController@verificarCuenta');
-// Route::post('cliente/login/ingresar', 'ClienteController@ingresar');
