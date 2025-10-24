@@ -5,9 +5,9 @@
 
     RewriteEngine On
 
-    # Convert HEAD requests to GET
+    # Force HEAD requests to be treated as GET
     RewriteCond %{REQUEST_METHOD} ^HEAD$
-    RewriteRule ^(.*)$ - [E=REQUEST_METHOD:GET]
+    RewriteRule ^(.*)$ $1 [E=REQUEST_METHOD:GET,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

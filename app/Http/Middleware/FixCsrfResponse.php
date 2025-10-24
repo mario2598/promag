@@ -16,6 +16,11 @@ class FixCsrfResponse
      */
     public function handle(Request $request, Closure $next)
     {
+        // Si el método es HEAD, cambiarlo a GET
+        if ($request->method() === 'HEAD') {
+            $request->setMethod('GET');
+        }
+        
         $response = $next($request);
         
         // Si la respuesta no es válida, crear una respuesta válida
