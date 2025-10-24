@@ -21,21 +21,4 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         //
     ];
-
-    /**
-     * Add the CSRF token to the response cookies.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Http\Response  $response
-     * @return \Illuminate\Http\Response
-     */
-    protected function addCookieToResponse($request, $response)
-    {
-        // Solo agregar cookie si la respuesta es válida
-        if ($response && method_exists($response, 'headers')) {
-            return parent::addCookieToResponse($request, $response);
-        }
-        
-        return $response;
-    }
 }
