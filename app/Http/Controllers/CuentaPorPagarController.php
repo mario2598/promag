@@ -337,7 +337,7 @@ class CuentaPorPagarController extends Controller
                 // Obtener información bancaria del usuario
                 $usuarioInfo = DB::table('usuario')
                     ->where('id', $primerBitacora->usuario)
-                    ->select('nombre_beneficiario', 'numero_cuenta', 'moneda_preferida')
+                    ->select('nombre_beneficiario', 'numero_cuenta', 'nombre_banco')
                     ->first();
 
                 // Calcular deducciones
@@ -367,7 +367,7 @@ class CuentaPorPagarController extends Controller
                     'tipo_cxp' => $this->obtenerTipoCxP('CXP_PAGO_HORAS'),
                     'beneficiario' => $usuarioInfo->nombre_beneficiario ?? $beneficiario,
                     'numero_cuenta' => $usuarioInfo->numero_cuenta ?? null,
-                    'moneda' => $usuarioInfo->moneda_preferida ?? 'CRC',
+                    'moneda' => 'CRC',
                     'monto_total' => $montoFinal,
                     'observaciones' => $observaciones . "\nProyecto: " . $proyectoNombre . "\nCliente: " . $clienteNombre . 
                                      ($totalDeducciones > 0 ? "\n\nDeducciones aplicadas: ₡" . number_format($totalDeducciones, 2) : ""),
