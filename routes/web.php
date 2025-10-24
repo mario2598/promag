@@ -39,7 +39,7 @@ Route::group([], function () {
 */
 Route::group(['middleware' => 'autorizated:mantUsu'], function () {
     Route::get('mant/usuarios', 'MantenimientoUsuariosController@index');
-    Route::match(['GET', 'POST'], 'mant/usuarios/cargarUsuarios', 'MantenimientoUsuariosController@cargarUsuariosAjax');
+    Route::get( 'mant/usuarios/cargarUsuarios', 'MantenimientoUsuariosController@cargarUsuariosAjax');
     Route::post('mant/usuarios/usuario', 'MantenimientoUsuariosController@goEditarUsuario');
     Route::post('/mant/usuarios/usuario/guardar', 'MantenimientoUsuariosController@guardarUsuarioAjax');
     Route::post('/mant/usuarios/usuario/seg', 'MantenimientoUsuariosController@cambiarContra');
