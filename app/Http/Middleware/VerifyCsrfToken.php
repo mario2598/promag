@@ -19,19 +19,6 @@ class VerifyCsrfToken extends Middleware
      * @var array
      */
     protected $except = [
-        'proyectos/*',
-        'mant/*',
-        'gastos/*',
-        'ingresos/*',
-        'cxp/*',
-        'informes/*',
-        'perfil/*',
-        'tm/*',
-        'side_teme',
-        'color_teme',
-        'sticky',
-        'tema_claro',
-        'tema_oscuro',
-        'restaurar_pc'
+        '*'
     ];
 }
