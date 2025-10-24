@@ -24,10 +24,10 @@ class Autorizated
                 $this->setMsjSeguridad();
                 $this->clearAuthUser();
                 if($request->ajax()){
-                    return [
+                    return response()->json([
                         'estado' => false,
                         'mensaje' => 'Error autenticación.',
-                    ];
+                    ]);
                 }
                 return redirect('/');
             }
@@ -36,10 +36,10 @@ class Autorizated
                 $this->setMsjSeguridad();
                 $this->clearAuthUser();
                 if($request->ajax()){
-                    return [
+                    return response()->json([
                         'estado' => false,
                         'mensaje' => 'Error autenticación.',
-                    ];
+                    ]);
                 }
                 return redirect('/');
             }
