@@ -141,6 +141,7 @@ Route::group(['middleware' => 'autorizated:mantClientes'], function () {
 
 Route::group(['middleware' => 'autorizated:proyAsig,proyGen'], function () {
     Route::post('proyectos/cargarProyecto', 'ProyectosController@cargarProyectoAjax');
+    Route::post('proyectos/cargarLineasPresupuesto', 'ProyectosController@cargarLineasPresupuestoAjax');
 });
 
  Route::group(['middleware' => 'autorizated:proyGen'], function () {
@@ -151,7 +152,7 @@ Route::group(['middleware' => 'autorizated:proyAsig,proyGen'], function () {
     Route::post('proyectos/cargarClientes', 'ProyectosController@cargarClientesAjax');
     Route::post('proyectos/cargarUsuarios', 'ProyectosController@cargarUsuariosActivosAjax');
     Route::post('proyectos/cargarEstados', 'ProyectosController@cargarEstadosProyectoAjax');
-    Route::post('proyectos/cargarLineasPresupuesto', 'ProyectosController@cargarLineasPresupuestoAjax');
+    
     Route::post('proyectos/guardarLineaPresupuesto', 'ProyectosController@guardarLineaPresupuestoAjax');
     Route::post('proyectos/eliminarLineaPresupuesto', 'ProyectosController@eliminarLineaPresupuestoAjax');
     Route::post('proyectos/cargarBitacoraUsuario', 'ProyectosController@cargarBitacoraUsuarioAjax');
