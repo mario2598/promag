@@ -139,10 +139,14 @@ Route::group(['middleware' => 'autorizated:mantClientes'], function () {
 |--------------------------------------------------------------------------
 */
 
+Route::group(['middleware' => 'autorizated:proyAsig,proyGen'], function () {
+    Route::post('proyectos/cargarProyecto', 'ProyectosController@cargarProyectoAjax');
+});
+
  Route::group(['middleware' => 'autorizated:proyGen'], function () {
     Route::get('proyectos/proyectos', 'ProyectosController@index');
     Route::post('proyectos/cargar', 'ProyectosController@cargarProyectosAjax');
-    Route::post('proyectos/cargarProyecto', 'ProyectosController@cargarProyectoAjax');
+   
     Route::post('proyectos/guardar', 'ProyectosController@guardarProyectoAjax');
     Route::post('proyectos/cargarClientes', 'ProyectosController@cargarClientesAjax');
     Route::post('proyectos/cargarUsuarios', 'ProyectosController@cargarUsuariosActivosAjax');
