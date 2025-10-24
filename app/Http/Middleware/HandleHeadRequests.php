@@ -21,6 +21,13 @@ class HandleHeadRequests
             $request->setMethod('GET');
         }
         
-        return $next($request);
+        $response = $next($request);
+        
+        // Asegurar que la respuesta sea válida
+        if (!$response || !method_exists($response, 'headers')) {
+            return response('', 200);
+        }
+        
+        return $response;
     }
 }
