@@ -81,17 +81,7 @@
                             </select>
                         </div>
                     </div>
-
-                    <!-- Usuario Encargado -->
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label>* Usuario Encargado</label>
-                            <select class="form-control select2" id="proyecto_encargado" required>
-                                <option value="">Seleccione un usuario</option>
-                            </select>
-                        </div>
-                    </div>
-
+                    
                     <!-- Nombre -->
                     <div class="col-md-12">
                         <div class="form-group">
@@ -116,45 +106,6 @@
                         </div>
                     </div>
 
-                    <!-- Estado del Proyecto -->
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label>* Estado del Proyecto</label>
-                            <select class="form-control" id="proyecto_estado" required>
-                                <option value="">Seleccione un estado</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Usuarios Asignados -->
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label>Usuarios Asignados al Proyecto</label>
-                            <button type="button" class="btn btn-sm btn-success float-right"
-                                onclick="abrirModalAgregarUsuario()">
-                                <i class="fas fa-user-plus"></i> Agregar Usuario
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead>
-                                    <tr class="text-center">
-                                        <th>Usuario</th>
-                                        <th>Rol</th>
-                                        <th>Precio/Hora</th>
-                                        <th width="120px">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tabla_usuarios_asignados">
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted">
-                                            <i>No hay usuarios asignados</i>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
 
                     <!-- Líneas de Presupuesto -->
                     <div class="col-md-12" id="seccion_lineas_presupuesto" style="display:none;">
@@ -202,97 +153,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" onclick="guardarProyecto()">Guardar</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Agregar Usuario -->
-<div class="modal fade" id="modal_agregar_usuario" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Agregar Usuarios al Proyecto</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-hover table-bordered" id="tabla_seleccionar_usuarios">
-                        <thead>
-                            <tr class="text-center">
-                                <th width="50px">
-                                    <input type="checkbox" id="check_todos" onclick="seleccionarTodos()">
-                                </th>
-                                <th>Usuario</th>
-                                <th>Rol</th>
-                                <th>Precio/Hora</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody_usuarios_disponibles">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="agregarUsuariosSeleccionados()">
-                    <i class="fas fa-check"></i> Agregar Seleccionados
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Ver Bitácoras del Usuario -->
-<div class="modal fade" id="modal_ver_bitacoras" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-clipboard-list"></i> Bitácoras de <span id="nombre_usuario_bitacoras"></span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-bordered table-hover">
-                        <thead class="bg-light">
-                            <tr class="text-center">
-                                <th>Fecha</th>
-                                <th>Entrada</th>
-                                <th>Salida</th>
-                                <th>Horas</th>
-                                <th>Rubro</th>
-                                <th>Línea</th>
-                                <th>Descripción</th>
-                                <th>Estado</th>
-                                <th>Costo (₡)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla_ver_bitacoras">
-                            <tr>
-                                <td colspan="9" class="text-center text-muted">
-                                    <i>Cargando bitácoras...</i>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot class="bg-light font-weight-bold">
-                            <tr>
-                                <td colspan="3" class="text-right">TOTALES:</td>
-                                <td class="text-center" id="ver_total_horas">0.00 hrs</td>
-                                <td colspan="4"></td>
-                                <td class="text-center" id="ver_total_costo">₡0.00</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
@@ -354,93 +214,11 @@
         </div>
     </div>
 </div>
-
-<!-- Modal Ver Observación de Rechazo -->
-<div class="modal fade" id="modal_observacion_rechazo" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle"></i> Motivo del Rechazo
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger mb-0">
-                    <div id="contenido_observacion_rechazo" style="white-space: pre-wrap; font-size: 1rem;"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Ver Detalles Del Proyecto -->
-<div class="modal fade" id="modal_resumen_proyecto" tabindex="-1" role="dialog">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content">
-      
-      <div class="modal-header bg-primary text-white">
-        <h5 class="modal-title" id="resumenProyectoLabel">
-          Resumen del Proyecto: <span id="resumen_nombre_proyecto"></span>
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <div class="modal-body">
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <strong>Cliente:</strong> <span id="resumen_cliente"></span><br>
-            <strong>Encargado:</strong> <span id="resumen_encargado"></span><br>
-            <strong>Fecha de creación:</strong> <span id="resumen_fecha"></span>
-          </div>
-          <div class="col-md-6">
-            <strong>Estado:</strong> <span id="resumen_estado"></span><br>
-            <strong>Presupuesto Total:</strong> <span id="resumen_monto_total"></span><br>
-            <strong>Consumido:</strong> <span id="resumen_monto_consumido"></span>
-            (<span id="resumen_porcentaje"></span>)
-          </div>
-        </div>
-
-        <hr>
-
-        <h6 class="mb-3">Usuarios Asignados</h6>
-        <div class="table-responsive">
-          <table class="table table-bordered table-sm" id="tabla_usuarios_resumen">
-            <thead class="table-light">
-              <tr>
-                <th>Nombre</th>
-                <th>Precio por hora</th>
-                <th>Horas trabajadas</th>
-                <th>Total consumido</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- Aquí se inyecta el contenido con renderizarResumenProyecto -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 @endsection
 
 @section('script')
 <script src="{{ asset('assets/bundles/datatables/datatables.min.js') }}"></script>
 <script src="{{ asset('assets/bundles/datatables/DataTables-1.10.16/js/dataTables.bootstrap4.min.js') }}"></script>
 <script src="{{ asset('assets/bundles/select2/dist/js/select2.full.min.js') }}"></script>
-<script src="{{ asset('assets/js/proyectos/proyectos.js') }}"></script>
+<script src="{{ asset('assets/js/proyectos/cotizaciones/proyectos.js') }}"></script>
 @endsection

@@ -22,6 +22,12 @@ class ProyectosController extends Controller
         return view('proyectos.proyectos');
     }
 
+    public function goCotizaciones()
+    {
+       
+        return view('proyectos.cotizaciones.proyectos');
+    }
+
     /**
      * Vista de Proyectos Asignados (proyectos donde el usuario está involucrado)
      */
@@ -180,20 +186,21 @@ class ProyectosController extends Controller
     /**
      * Carga todos los proyectos con información relacionada
      */
-    public function cargarProyectosAjax()
+    public function cargarCotizacionesAjax()
     {
         try {
             $proyectos = DB::table('proyecto')
                 ->join('cliente', 'cliente.id', '=', 'proyecto.cliente')
-                ->join('usuario', 'usuario.id', '=', 'proyecto.usuario_encargado')
+                ->leftjoin('usuario', 'usuario.id', '=', 'proyecto.usuario_encargado')
                 ->join('sis_estado', 'sis_estado.id', '=', 'proyecto.estado')
                 ->select(
                     'proyecto.*',
                     'cliente.nombre_completo as cliente_nombre',
-                    DB::raw("CONCAT(usuario.nombre, ' ', usuario.ape1) as encargado_nombre"),
+                    DB::raw("NVL(CONCAT(usuario.nombre, ' ', usuario.ape1),'Sin Asignar') as encargado_nombre"),
                     'sis_estado.nombre as estado_nombre',
                     'sis_estado.cod_general as estado_codigo'
                 )
+                ->where('proyecto.estado', '=', SisEstadoController::getIdEstadoByCodGeneral("PROY_COTIZACION"))
                 ->orderBy('proyecto.id', 'desc')
                 ->get();
 
@@ -265,9 +272,9 @@ class ProyectosController extends Controller
                     ->select('proyecto.*', 'sis_estado.cod_general as estado_codigo')
                     ->first();
 
-                if ($proyectoActual && $proyectoActual->estado_codigo != 'PROY_ACTIVO') {
+                if ($proyectoActual && $proyectoActual->estado_codigo != 'PROY_COTIZACION') {
                     DB::rollBack();
-                    return $this->responseAjaxServerError("No se puede modificar un proyecto que no está en estado Activo", []);
+                    return $this->responseAjaxServerError("No se puede modificar un proyecto que no está en estado de cotización", []);
                 }
             }
 
@@ -275,11 +282,8 @@ class ProyectosController extends Controller
                 'cliente' => $proyectoR['cliente'],
                 'nombre' => $proyectoR['nombre'],
                 'descripcion' => $proyectoR['descripcion'] ?? '',
-                'usuario_encargado' => $proyectoR['usuario_encargado'],
                 'ubicacion' => $proyectoR['ubicacion'] ?? '',
-                'estado' => isset($proyectoR['estado']) && !empty($proyectoR['estado']) 
-                    ? $proyectoR['estado'] 
-                    : SisEstadoController::getIdEstadoByCodGeneral("PROY_ACTIVO")
+                'estado' => SisEstadoController::getIdEstadoByCodGeneral("PROY_COTIZACION")
             ];
 
             if ($actualizar) {
@@ -293,22 +297,6 @@ class ProyectosController extends Controller
                 $id = DB::table('proyecto')->insertGetId($datosProyecto);
             }
 
-            // Actualizar usuarios asignados
-            if (isset($proyectoR['usuarios_asignados']) && count($proyectoR['usuarios_asignados']) > 0) {
-                // Eliminar asignaciones anteriores
-                DB::table('proyecto_usuario')
-                    ->where('proyecto', '=', $id)
-                    ->delete();
-
-                // Insertar nuevas asignaciones
-                foreach ($proyectoR['usuarios_asignados'] as $usuarioId) {
-                    DB::table('proyecto_usuario')->insertGetId([
-                        'proyecto' => $id,
-                        'usuario' => $usuarioId,
-                        'fecha_asignacion' => date("Y-m-d H:i:s")
-                    ]);
-                }
-            }
 
             DB::commit();
             return $this->responseAjaxSuccess("Proyecto guardado correctamente", $id);
@@ -930,4 +918,79 @@ class ProyectosController extends Controller
             return $this->responseAjaxServerError("Error cargando bitácoras: " . $ex->getMessage(), []);
         }
     }
+
+   public function cargarResumenProyectoAjax(Request $request)
+   {
+    try {
+        $proyectoId = $request->input('proyecto_id');
+
+        $proyecto = DB::table('proyecto')
+            ->join('cliente', 'cliente.id', '=', 'proyecto.cliente')
+            ->join('usuario as encargado', 'encargado.id', '=', 'proyecto.encargado')
+            ->join('sis_estado', 'sis_estado.id', '=', 'proyecto.estado')
+            ->where('proyecto.id', '=', $proyectoId)
+            ->select(
+                'proyecto.nombre',
+                'cliente.nombre_completo as cliente_nombre',
+                'encargado.nombre as encargado_nombre',
+                'proyecto.fecha_creacion',
+                'sis_estado.nombre as estado_texto'
+            )
+            ->first();
+
+        if (!$proyecto) {
+            return $this->responseAjaxServerError("Proyecto no encontrado", []);
+        }
+
+        // 🔹 Obtener totales desde las líneas de presupuesto
+        $lineas = DB::table('proyecto_linea_presupuesto')
+            ->where('proyecto', '=', $proyectoId)
+            ->select(
+                DB::raw('SUM(monto_autorizado) as total_autorizado'),
+                DB::raw('SUM(monto_consumido) as total_consumido')
+            )
+            ->first();
+
+        $totalAutorizado = $lineas->total_autorizado ?? 0;
+        $totalConsumido = $lineas->total_consumido ?? 0;
+
+        $porcentajeUsado = $totalAutorizado > 0
+            ? round(($totalConsumido / $totalAutorizado) * 100, 2)
+            : 0;
+
+        // 🔹 Usuarios asignados
+        $usuarios = DB::table('proyecto_usuario as pu')
+            ->join('usuario as u', 'pu.usuario', '=', 'u.id')
+            ->select(
+                'u.nombre',
+                'u.precio_hora',
+                DB::raw('COALESCE(SUM(b.horas), 0) as horas_trabajadas'),
+                DB::raw('COALESCE(SUM(b.horas * u.precio_hora), 0) as total_consumido')
+            )
+            ->leftJoin('bitacora as b', function($join) use ($proyectoId) {
+                $join->on('b.usuario', '=', 'u.id')
+                     ->where('b.proyecto', '=', $proyectoId);
+            })
+            ->where('pu.proyecto', '=', $proyectoId)
+            ->groupBy('u.nombre', 'u.precio_hora')
+            ->get();
+
+        $datos = [
+            'nombre' => $proyecto->nombre,
+            'cliente_nombre' => $proyecto->cliente_nombre,
+            'encargado_nombre' => $proyecto->encargado_nombre,
+            'fecha_creacion' => $proyecto->fecha_creacion,
+            'estado_texto' => $proyecto->estado_texto,
+            'presupuesto_total' => $totalAutorizado,
+            'presupuesto_consumido' => $totalConsumido,
+            'porcentaje_usado' => $porcentajeUsado,
+            'usuarios' => $usuarios
+        ];
+
+        return $this->responseAjaxSuccess("Resumen cargado correctamente", $datos);
+    } catch (\Exception $e) {
+        return $this->responseAjaxServerError("Error al cargar resumen: " . $e->getMessage(), []);
+    }
+    }
+
 }

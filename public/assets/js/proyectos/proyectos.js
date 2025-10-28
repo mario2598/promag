@@ -154,6 +154,9 @@ function cargarTablaProyectos(proyectos) {
                     <button class="btn btn-sm btn-primary" onclick="editarProyecto(${proyecto.id})" title="Editar">
                         <i class="fas fa-edit"></i>
                     </button>
+                     <button class="btn btn-sm btn-primary" onclick="cargarResumenProyecto(${proyecto.id})" title="Detalles">
+                        <i class="fas fa-eye"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -747,3 +750,60 @@ function verObservacionRechazo(observacion) {
     $('#modal_observacion_rechazo').modal('show');
 }
 
+function cargarResumenProyecto(idProyecto) {
+    $.ajax({
+        url: `${base_path}/proyectos/cargarResumenProyecto`,
+        type: 'post',
+        dataType: "json",
+        data: {
+            _token: CSRF_TOKEN,
+            proyecto_id: idProyecto
+        }
+    }).done(function (response) {
+        if (response.estado) {
+            renderizarResumenProyecto(response.datos);
+            $('#modal_resumen_proyecto').modal('show');
+        } else {
+            showError(response.mensaje);
+        }
+    }).fail(function () {
+        showError("Error al cargar el resumen del proyecto");
+    });
+}
+
+function renderizarResumenProyecto(datos) {
+    $('#resumen_nombre_proyecto').text(datos.nombre);
+    $('#resumen_cliente').text(datos.cliente_nombre);
+    $('#resumen_encargado').text(datos.encargado_nombre);
+    $('#resumen_fecha').text(datos.fecha_creacion);
+    $('#resumen_estado').text(datos.estado_texto);
+
+    // Presupuesto
+    $('#resumen_monto_total').text(`₡${Number(datos.presupuesto_total).toLocaleString()}`);
+    $('#resumen_monto_consumido').text(`₡${Number(datos.presupuesto_consumido).toLocaleString()}`);
+    $('#resumen_porcentaje').text(`${datos.porcentaje_usado}%`);
+
+    // Barra de progreso
+    $('#resumen_barra_progreso')
+        .css('width', `${datos.porcentaje_usado}%`)
+        .removeClass('bg-success bg-warning bg-danger')
+        .addClass(
+            datos.porcentaje_usado <= 50 ? 'bg-success' :
+            datos.porcentaje_usado <= 80 ? 'bg-warning' : 'bg-danger'
+        )
+        .text(`${datos.porcentaje_usado}%`);
+
+    // Usuarios asignados
+    let htmlUsuarios = '';
+    datos.usuarios.forEach(usuario => {
+        htmlUsuarios += `
+            <tr>
+                <td>${usuario.nombre}</td>
+                <td>₡${usuario.precio_hora}</td>
+                <td>${usuario.horas_trabajadas}</td>
+                <td>₡${usuario.total_consumido}</td>
+            </tr>
+        `;
+    });
+    $('#tabla_usuarios_resumen tbody').html(htmlUsuarios);
+}

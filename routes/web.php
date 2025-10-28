@@ -146,7 +146,7 @@ Route::group(['middleware' => 'autorizated:proyAsig,proyGen'], function () {
 
  Route::group(['middleware' => 'autorizated:proyGen'], function () {
     Route::get('proyectos/proyectos', 'ProyectosController@index');
-    Route::post('proyectos/cargar', 'ProyectosController@cargarProyectosAjax');
+    Route::post('proyectos/cargar', 'ProyectosController@cargarCotizacionesAjax');
    
     Route::post('proyectos/guardar', 'ProyectosController@guardarProyectoAjax');
     Route::post('proyectos/cargarClientes', 'ProyectosController@cargarClientesAjax');
@@ -166,6 +166,7 @@ Route::group(['middleware' => 'autorizated:proyAsig'], function () {
     Route::post('proyectos/guardarBitacora', 'ProyectosController@guardarBitacoraAjax');
     Route::post('proyectos/eliminarBitacora', 'ProyectosController@eliminarBitacoraAjax');
     Route::post('proyectos/cambiarEstadoBitacora', 'ProyectosController@cambiarEstadoBitacoraAjax');
+    Route::post('proyectos/cargarResumenProyecto', 'ProyectosController@cargarResumenProyectoAjax');
 });
 
 // Rutas para Autorización de Horas (proyAut)
@@ -175,6 +176,18 @@ Route::group(['middleware' => 'autorizated:proyAut'], function () {
     Route::post('proyectos/cargarBitacorasAutorizacion', 'ProyectosController@cargarBitacorasAutorizacionAjax');
     Route::post('proyectos/autorizarBitacora', 'ProyectosController@cambiarEstadoBitacoraAjax');
     Route::post('proyectos/autorizarMultiplesBitacoras', 'ProyectosController@autorizarMultiplesBitacorasAjax');
+});
+
+Route::group(['middleware' => 'autorizated:proyCot'], function () {
+    Route::get('proyectos/cotizaciones', 'ProyectosController@goCotizaciones');
+    Route::post('proyectos/cotizaciones/cargar', 'ProyectosController@cargarCotizacionesAjax');
+   
+    Route::post('proyectos/cotizaciones/guardar', 'ProyectosController@guardarProyectoAjax');
+    Route::post('proyectos/cargarClientes', 'ProyectosController@cargarClientesAjax');
+    Route::post('proyectos/cargarEstados', 'ProyectosController@cargarEstadosProyectoAjax');
+    
+    Route::post('proyectos/guardarLineaPresupuesto', 'ProyectosController@guardarLineaPresupuestoAjax');
+    Route::post('proyectos/eliminarLineaPresupuesto', 'ProyectosController@eliminarLineaPresupuestoAjax');
 });
 
 
