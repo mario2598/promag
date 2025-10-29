@@ -819,6 +819,18 @@ ALTER TABLE `cxp_deduccion`
   ADD CONSTRAINT `cxp_deduccion_cxp_fk` FOREIGN KEY (`cxp`) REFERENCES `cxp` (`id`) ON DELETE CASCADE ON UPDATE NO ACTION,
   ADD CONSTRAINT `cxp_deduccion_rubro_fk` FOREIGN KEY (`rubro_deduccion`) REFERENCES `rubro_deduccion_salario` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION;
 
+-- =========================================================
+-- nuevo script 10/27/2025
+-- =========================================================
+INSERT INTO `vista` (`id`, `titulo`, `ruta`, `tipo`, `codigo_grupo`, `orden`, `peso_general`, `codigo_pantalla`, `icon`, `inactivo`) VALUES
+
+(29, 'Cotizaciones', 'proyectos/cotizaciones', 'M', 'proyectos', 4, 5, 'proyCot', '', 0);
+
+INSERT INTO `sis_estado` (`id`, `nombre`, `clase`, `cod_general`) VALUES
+(20, 'Proyecto en Cotización', 8, 'PROY_COTIZACION');
+
+ALTER TABLE `proyecto` CHANGE `usuario_encargado` `usuario_encargado` INT(11) NULL;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
