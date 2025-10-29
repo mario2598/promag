@@ -195,7 +195,7 @@
                                         </thead>
                                         <tbody>
                                             @php
-                                                $totalIngresos = $data['resumen']['ingresos'] ?? 1;
+                                                $totalIngresos = ($data['resumen']['ingresos'] ?? 0) > 0 ? ($data['resumen']['ingresos'] ?? 0) : 1;
                                             @endphp
                                             <tr>
                                                 <td><i class="fas fa-mobile-alt text-primary"></i> Ingresos SINPE</td>
