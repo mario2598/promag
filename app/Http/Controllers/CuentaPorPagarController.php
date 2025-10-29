@@ -583,12 +583,49 @@ class CuentaPorPagarController extends Controller
      */
     private function generarNumeroCxP()
     {
-        $fecha = date('Y-m-d');
-        $contador = DB::table('cxp')
-            ->whereDate('fecha_creacion', $fecha)
-            ->count() + 1;
-
-        return "CXP-" . date('Y') . "-" . str_pad($contador, 4, '0', STR_PAD_LEFT);
+        $anio = date('Y');
+        $prefijo = "CXP-{$anio}-";
+        
+        // Buscar el último número de CxP del año actual
+        $ultimoCxp = DB::table('cxp')
+            ->where('numero_cxp', 'like', $prefijo . '%')
+            ->orderBy('numero_cxp', 'desc')
+            ->value('numero_cxp');
+        
+        $contador = 1;
+        
+        if ($ultimoCxp) {
+            // Extraer el número del último CxP (ej: "CXP-2025-0001" -> 1)
+            $partes = explode('-', $ultimoCxp);
+            if (count($partes) === 3 && is_numeric($partes[2])) {
+                $contador = intval($partes[2]) + 1;
+            }
+        }
+        
+        // Generar el número y verificar que no exista (por si hay concurrencia)
+        $intentos = 0;
+        $maxIntentos = 100;
+        
+        do {
+            $numeroCxp = $prefijo . str_pad($contador, 4, '0', STR_PAD_LEFT);
+            
+            // Verificar si ya existe
+            $existe = DB::table('cxp')
+                ->where('numero_cxp', $numeroCxp)
+                ->exists();
+            
+            if (!$existe) {
+                return $numeroCxp;
+            }
+            
+            // Si existe, incrementar contador y volver a intentar
+            $contador++;
+            $intentos++;
+            
+        } while ($intentos < $maxIntentos);
+        
+        // Si después de varios intentos no se encontró un número único, usar timestamp
+        return $prefijo . str_pad($contador, 4, '0', STR_PAD_LEFT) . '-' . time();
     }
 
     /**
