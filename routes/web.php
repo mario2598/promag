@@ -157,6 +157,18 @@ Route::group(['middleware' => 'autorizated:proyAsig,proyGen'], function () {
     Route::post('proyectos/eliminarLineaPresupuesto', 'ProyectosController@eliminarLineaPresupuestoAjax');
     Route::post('proyectos/cargarBitacoraUsuario', 'ProyectosController@cargarBitacoraUsuarioAjax');
 });
+Route::group(['middleware' => 'autorizated:cotProy'], function () {
+// Rutas para Cotización de Proyectos (temporalmente sin middleware para pruebas)
+Route::get('proyectos/cotizacion_proyectos', 'ProyectosController@cotizacionProyectos');
+Route::post('proyectos/cotizacion/cargar', 'ProyectosController@cargarCotizacionProyectosAjax');
+Route::post('proyectos/cotizacion/cargarProyecto', 'ProyectosController@cargarCotizacionProyectoAjax');
+Route::post('proyectos/cotizacion/guardar', 'ProyectosController@guardarCotizacionProyectoAjax');
+Route::post('proyectos/cotizacion/cargarClientes', 'ProyectosController@cargarClientesAjax');
+Route::post('proyectos/cotizacion/cargarEstados', 'ProyectosController@cargarEstadosCotizacionAjax');
+Route::post('proyectos/cotizacion/cargarLineasPresupuesto', 'ProyectosController@cargarLineasPresupuestoAjax');
+Route::post('proyectos/cotizacion/guardarLineaPresupuesto', 'ProyectosController@guardarLineaPresupuestoAjax');
+Route::post('proyectos/cotizacion/eliminarLineaPresupuesto', 'ProyectosController@eliminarLineaPresupuestoAjax');
+});
 
 Route::group(['middleware' => 'autorizated:proyAsig'], function () {
     Route::get('proyectos/proyectos_asignados', 'ProyectosController@proyectosAsignados');
@@ -210,11 +222,16 @@ Route::post('cxp/actualizar', 'CuentaPorPagarController@actualizarCxPAjax');
 Route::post('cxp/detalle', 'CuentaPorPagarController@obtenerDetalleCxPAjax');
 Route::post('cxp/aprobar-pagar', 'CuentaPorPagarController@aprobarYPagarCxPAjax');
 Route::post('cxp/rechazar', 'CuentaPorPagarController@rechazarCxPAjax');
-Route::get('cxp/historial_pagos_proyectos', 'CuentaPorPagarController@historialPagosProyectos');
-Route::post('cxp/historial-pagos-proyectos-ajax', 'CuentaPorPagarController@historialPagosProyectosAjax');
-Route::post('cxp/pagos-proyecto-ajax', 'CuentaPorPagarController@pagosProyectoAjax');
-Route::post('cxp/detalle-pago-proyecto-ajax', 'CuentaPorPagarController@detallePagoProyectoAjax');
 });
+
+/*** Cuentas por Pagar */
+Route::group(['middleware' => 'autorizated:cxpHistPagpProy'], function () {
+    Route::get('cxp/historial_pagos_proyectos', 'CuentaPorPagarController@historialPagosProyectos');
+    Route::post('cxp/historial-pagos-proyectos-ajax', 'CuentaPorPagarController@historialPagosProyectosAjax');
+    Route::post('cxp/pagos-proyecto-ajax', 'CuentaPorPagarController@pagosProyectoAjax');
+    Route::post('cxp/consumo-lineas-presupuesto-ajax', 'CuentaPorPagarController@consumoLineasPresupuestoAjax');
+    Route::post('cxp/detalle-pago-proyecto-ajax', 'CuentaPorPagarController@detallePagoProyectoAjax');
+    });
 
 /*** Mantenimiento de Monedas */
 Route::group(['middleware' => 'autorizated:mantMonedas'], function () {
