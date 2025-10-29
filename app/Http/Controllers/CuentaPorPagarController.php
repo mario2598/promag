@@ -166,6 +166,110 @@ class CuentaPorPagarController extends Controller
     }
 
     /**
+     * Obtiene el consumo por líneas de presupuesto de un proyecto
+     */
+    public function consumoLineasPresupuestoAjax(Request $request)
+    {
+        try {
+            $proyectoId = $request->input('proyecto_id');
+
+            // Obtener estados de bitácoras
+            $estadoAprobada = DB::table('sis_estado')
+                ->where('cod_general', '=', 'BIT_PROY_APROBADA')
+                ->first();
+            $estadoPendiente = DB::table('sis_estado')
+                ->where('cod_general', '=', 'BIT_PROY_PENDIENTE')
+                ->first();
+
+            if (!$estadoAprobada || !$estadoPendiente) {
+                return $this->responseAjaxServerError("Estados de bitácora no encontrados", []);
+            }
+
+            // Obtener todas las líneas de presupuesto del proyecto
+            $lineas = DB::table('proyecto_linea_presupuesto')
+                ->where('proyecto', '=', $proyectoId)
+                ->where('estado', '=', 'A')
+                ->orderBy('numero_linea', 'asc')
+                ->get();
+
+            $lineasConConsumo = [];
+
+            foreach ($lineas as $linea) {
+                // Obtener bitácoras aprobadas para esta línea
+                $bitacorasAprobadas = DB::table('bit_usuario_proyecto')
+                    ->leftJoin('usuario', 'usuario.id', '=', 'bit_usuario_proyecto.usuario')
+                    ->leftJoin('rubro_extra_salario', 'rubro_extra_salario.id', '=', 'bit_usuario_proyecto.rubro_extra_salario')
+                    ->where('bit_usuario_proyecto.linea_presupuesto', '=', $linea->id)
+                    ->where('bit_usuario_proyecto.estado', '=', $estadoAprobada->id)
+                    ->select(
+                        'bit_usuario_proyecto.hora_entrada',
+                        'bit_usuario_proyecto.hora_salida',
+                        'usuario.precio_hora',
+                        'rubro_extra_salario.multiplicador'
+                    )
+                    ->get();
+
+                // Obtener bitácoras pendientes para esta línea
+                $bitacorasPendientes = DB::table('bit_usuario_proyecto')
+                    ->leftJoin('usuario', 'usuario.id', '=', 'bit_usuario_proyecto.usuario')
+                    ->leftJoin('rubro_extra_salario', 'rubro_extra_salario.id', '=', 'bit_usuario_proyecto.rubro_extra_salario')
+                    ->where('bit_usuario_proyecto.linea_presupuesto', '=', $linea->id)
+                    ->where('bit_usuario_proyecto.estado', '=', $estadoPendiente->id)
+                    ->select(
+                        'bit_usuario_proyecto.hora_entrada',
+                        'bit_usuario_proyecto.hora_salida',
+                        'usuario.precio_hora',
+                        'rubro_extra_salario.multiplicador'
+                    )
+                    ->get();
+
+                // Calcular monto consumido (aprobadas)
+                $montoConsumido = 0;
+                foreach ($bitacorasAprobadas as $bitacora) {
+                    $horas = $this->calcularHoras($bitacora->hora_entrada, $bitacora->hora_salida);
+                    $precioHora = floatval($bitacora->precio_hora ?? 0);
+                    $multiplicador = floatval($bitacora->multiplicador ?? 1.00);
+                    $costo = $horas * $precioHora * $multiplicador;
+                    $montoConsumido += $costo;
+                }
+
+                // Calcular monto pendiente (pendientes)
+                $montoPendiente = 0;
+                foreach ($bitacorasPendientes as $bitacora) {
+                    $horas = $this->calcularHoras($bitacora->hora_entrada, $bitacora->hora_salida);
+                    $precioHora = floatval($bitacora->precio_hora ?? 0);
+                    $multiplicador = floatval($bitacora->multiplicador ?? 1.00);
+                    $costo = $horas * $precioHora * $multiplicador;
+                    $montoPendiente += $costo;
+                }
+
+                $montoAutorizado = floatval($linea->monto_autorizado ?? 0);
+                $montoDisponible = $montoAutorizado - $montoConsumido;
+
+                $lineasConConsumo[] = [
+                    'id' => $linea->id,
+                    'numero_linea' => $linea->numero_linea,
+                    'descripcion' => $linea->descripcion,
+                    'monto_autorizado' => $montoAutorizado,
+                    'monto_consumido' => $montoConsumido,
+                    'monto_pendiente' => $montoPendiente,
+                    'monto_disponible' => $montoDisponible,
+                    'porcentaje_consumido' => $montoAutorizado > 0 ? ($montoConsumido / $montoAutorizado) * 100 : 0,
+                    'num_bitacoras_aprobadas' => $bitacorasAprobadas->count(),
+                    'num_bitacoras_pendientes' => $bitacorasPendientes->count()
+                ];
+            }
+
+            return $this->responseAjaxSuccess("Consumo por líneas cargado correctamente", [
+                'data' => $lineasConConsumo
+            ]);
+
+        } catch (\Exception $ex) {
+            return $this->responseAjaxServerError("Error al cargar consumo por líneas: " . $ex->getMessage(), []);
+        }
+    }
+
+    /**
      * Obtiene el detalle completo de un pago de proyecto
      */
     public function detallePagoProyectoAjax(Request $request)
@@ -200,7 +304,7 @@ class CuentaPorPagarController extends Controller
                 )
                 ->get();
 
-            // Para cada CxP, obtener sus deducciones
+            // Para cada CxP, obtener sus deducciones y bitácoras relacionadas
             foreach ($cxps as $cxp) {
                 $deducciones = DB::table('cxp_deduccion')
                     ->leftJoin('rubro_deduccion_salario', 'rubro_deduccion_salario.id', '=', 'cxp_deduccion.rubro_deduccion')
@@ -213,6 +317,38 @@ class CuentaPorPagarController extends Controller
                     ->get();
                 
                 $cxp->deducciones = $deducciones;
+
+                // Obtener bitácoras relacionadas con información de línea de presupuesto
+                $bitacoras = DB::table('bit_usuario_proyecto')
+                    ->leftJoin('usuario', 'usuario.id', '=', 'bit_usuario_proyecto.usuario')
+                    ->leftJoin('proyecto', 'proyecto.id', '=', 'bit_usuario_proyecto.proyecto')
+                    ->leftJoin('rubro_extra_salario', 'rubro_extra_salario.id', '=', 'bit_usuario_proyecto.rubro_extra_salario')
+                    ->leftJoin('proyecto_linea_presupuesto', 'proyecto_linea_presupuesto.id', '=', 'bit_usuario_proyecto.linea_presupuesto')
+                    ->where('bit_usuario_proyecto.cxp', $cxp->id)
+                    ->select(
+                        'bit_usuario_proyecto.*',
+                        DB::raw("CONCAT(usuario.nombre, ' ', usuario.ape1, IFNULL(CONCAT(' ', usuario.ape2), '')) as usuario_nombre"),
+                        'usuario.precio_hora',
+                        'proyecto.nombre as proyecto_nombre',
+                        'rubro_extra_salario.nombre as rubro_nombre',
+                        'rubro_extra_salario.multiplicador',
+                        'proyecto_linea_presupuesto.numero_linea as linea_numero',
+                        'proyecto_linea_presupuesto.descripcion as linea_descripcion'
+                    )
+                    ->orderBy('bit_usuario_proyecto.fecha', 'desc')
+                    ->orderBy('bit_usuario_proyecto.hora_entrada', 'asc')
+                    ->get();
+
+                // Calcular costo de cada bitácora
+                foreach ($bitacoras as $bitacora) {
+                    $horas = $this->calcularHoras($bitacora->hora_entrada, $bitacora->hora_salida);
+                    $precioHora = floatval($bitacora->precio_hora ?? 0);
+                    $multiplicador = floatval($bitacora->multiplicador ?? 1.00);
+                    $bitacora->horas_calculadas = $horas;
+                    $bitacora->costo_calculado = $horas * $precioHora * $multiplicador;
+                }
+
+                $cxp->bitacoras = $bitacoras;
             }
 
             return $this->responseAjaxSuccess("Detalle cargado correctamente", [
@@ -236,13 +372,15 @@ class CuentaPorPagarController extends Controller
                 ->leftJoin('sis_estado', 'sis_estado.id', '=', 'cxp.estado')
                 ->leftJoin('usuario as usuario_creacion', 'usuario_creacion.id', '=', 'cxp.usuario_creacion')
                 ->leftJoin('usuario as usuario_aprobacion', 'usuario_aprobacion.id', '=', 'cxp.usuario_aprobacion')
+                ->leftJoin('usuario as usuario_beneficiario', 'usuario_beneficiario.id', '=', 'cxp.usuario_beneficiario')
                 ->select(
                     'cxp.*',
                     'sis_tipo.nombre as tipo_nombre',
                     'sis_estado.nombre as estado_nombre',
                     'sis_estado.cod_general as estado_codigo',
                     DB::raw("CONCAT(usuario_creacion.nombre, ' ', usuario_creacion.ape1, IFNULL(CONCAT(' ', usuario_creacion.ape2), '')) as usuario_creacion_nombre"),
-                    DB::raw("CONCAT(usuario_aprobacion.nombre, ' ', usuario_aprobacion.ape1, IFNULL(CONCAT(' ', usuario_aprobacion.ape2), '')) as usuario_aprobacion_nombre")
+                    DB::raw("CONCAT(usuario_aprobacion.nombre, ' ', usuario_aprobacion.ape1, IFNULL(CONCAT(' ', usuario_aprobacion.ape2), '')) as usuario_aprobacion_nombre"),
+                    DB::raw("CONCAT(usuario_beneficiario.nombre, ' ', usuario_beneficiario.ape1, IFNULL(CONCAT(' ', usuario_beneficiario.ape2), '')) as usuario_beneficiario_nombre")
                 )
                 ->orderBy('cxp.fecha_creacion', 'desc')
                 ->get();
@@ -334,11 +472,22 @@ class CuentaPorPagarController extends Controller
                     ];
                 }
 
-                // Obtener información bancaria del usuario
+                // Obtener información bancaria del usuario que trabajó (el que recibirá el pago)
                 $usuarioInfo = DB::table('usuario')
                     ->where('id', $primerBitacora->usuario)
-                    ->select('nombre_beneficiario', 'numero_cuenta', 'nombre_banco')
+                    ->select(
+                        'nombre_beneficiario', 
+                        'numero_cuenta', 
+                        'nombre_banco',
+                        DB::raw("CONCAT(nombre, ' ', ape1, IFNULL(CONCAT(' ', ape2), '')) as nombre_completo")
+                    )
                     ->first();
+
+                // Construir nombre del beneficiario
+                // Si tiene nombre_beneficiario configurado, usarlo; sino usar nombre completo
+                $beneficiario = !empty($usuarioInfo->nombre_beneficiario) 
+                    ? $usuarioInfo->nombre_beneficiario 
+                    : ($usuarioInfo->nombre_completo ?? $beneficiario);
 
                 // Calcular deducciones
                 $totalDeducciones = 0;
@@ -362,17 +511,20 @@ class CuentaPorPagarController extends Controller
                 $montoFinal = $montoTotal - $totalDeducciones;
 
                 // Crear CxP con tipo "Pago de horas trabajadas"
+                // usuario_creacion = Usuario que autoriza/crea la CxP
+                // usuario_beneficiario = Usuario que trabajó las horas (recibe el pago)
                 $cxpId = DB::table('cxp')->insertGetId([
                     'numero_cxp' => $numeroCxp,
                     'tipo_cxp' => $this->obtenerTipoCxP('CXP_PAGO_HORAS'),
-                    'beneficiario' => $usuarioInfo->nombre_beneficiario ?? $beneficiario,
+                    'beneficiario' => $beneficiario,
                     'numero_cuenta' => $usuarioInfo->numero_cuenta ?? null,
                     'moneda' => 'CRC',
                     'monto_total' => $montoFinal,
                     'observaciones' => $observaciones . "\nProyecto: " . $proyectoNombre . "\nCliente: " . $clienteNombre . 
                                      ($totalDeducciones > 0 ? "\n\nDeducciones aplicadas: ₡" . number_format($totalDeducciones, 2) : ""),
                     'estado' => $this->obtenerEstadoCxP('CXP_PENDIENTE'),
-                    'usuario_creacion' => session('usuario')['id'] ?? 1
+                    'usuario_creacion' => session('usuario')['id'] ?? 1,  // Usuario que autoriza
+                    'usuario_beneficiario' => $primerBitacora->usuario  // Usuario que recibe el pago
                 ]);
 
                 // Crear detalles de CxP
@@ -440,7 +592,8 @@ class CuentaPorPagarController extends Controller
     }
 
     /**
-     * Calcula las horas trabajadas
+     * Calcula las horas trabajadas entre dos horas (HH:MM)
+     * Maneja correctamente el cruce de medianoche
      */
     private function calcularHoras($horaEntrada, $horaSalida)
     {
@@ -448,10 +601,30 @@ class CuentaPorPagarController extends Controller
             return 0;
         }
 
-        $entrada = \Carbon\Carbon::parse($horaEntrada);
-        $salida = \Carbon\Carbon::parse($horaSalida);
+        // Parsear horas y minutos
+        $entradaParts = explode(':', $horaEntrada);
+        $salidaParts = explode(':', $horaSalida);
         
-        return $salida->diffInHours($entrada);
+        $horaEntradaNum = intval($entradaParts[0]);
+        $minutoEntradaNum = intval($entradaParts[1] ?? 0);
+        $horaSalidaNum = intval($salidaParts[0]);
+        $minutoSalidaNum = intval($salidaParts[1] ?? 0);
+        
+        // Convertir a minutos totales
+        $minutosEntrada = $horaEntradaNum * 60 + $minutoEntradaNum;
+        $minutosSalida = $horaSalidaNum * 60 + $minutoSalidaNum;
+        
+        // Calcular diferencia
+        $diferenciaMinutos = $minutosSalida - $minutosEntrada;
+        
+        // Si la diferencia es negativa, significa que cruzó medianoche (trabajo nocturno)
+        // Agregar 24 horas (1440 minutos)
+        if ($diferenciaMinutos < 0) {
+            $diferenciaMinutos += 1440;
+        }
+        
+        // Convertir minutos a horas
+        return $diferenciaMinutos / 60;
     }
 
     /**
@@ -573,6 +746,7 @@ class CuentaPorPagarController extends Controller
                 ->leftJoin('sis_estado', 'sis_estado.id', '=', 'cxp.estado')
                 ->leftJoin('usuario as usuario_creacion', 'usuario_creacion.id', '=', 'cxp.usuario_creacion')
                 ->leftJoin('usuario as usuario_aprobacion', 'usuario_aprobacion.id', '=', 'cxp.usuario_aprobacion')
+                ->leftJoin('usuario as usuario_beneficiario', 'usuario_beneficiario.id', '=', 'cxp.usuario_beneficiario')
                 ->where('cxp.id', $id)
                 ->select(
                     'cxp.*',
@@ -580,7 +754,8 @@ class CuentaPorPagarController extends Controller
                     'sis_estado.nombre as estado_nombre',
                     'sis_estado.cod_general as estado_codigo',
                     DB::raw("CONCAT(usuario_creacion.nombre, ' ', usuario_creacion.ape1, IFNULL(CONCAT(' ', usuario_creacion.ape2), '')) as usuario_creacion_nombre"),
-                    DB::raw("CONCAT(usuario_aprobacion.nombre, ' ', usuario_aprobacion.ape1, IFNULL(CONCAT(' ', usuario_aprobacion.ape2), '')) as usuario_aprobacion_nombre")
+                    DB::raw("CONCAT(usuario_aprobacion.nombre, ' ', usuario_aprobacion.ape1, IFNULL(CONCAT(' ', usuario_aprobacion.ape2), '')) as usuario_aprobacion_nombre"),
+                    DB::raw("CONCAT(usuario_beneficiario.nombre, ' ', usuario_beneficiario.ape1, IFNULL(CONCAT(' ', usuario_beneficiario.ape2), '')) as usuario_beneficiario_nombre")
                 )
                 ->first();
 

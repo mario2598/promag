@@ -127,6 +127,10 @@ function actualizarResumen(resumen) {
  * Ver pagos de un proyecto específico
  */
 function verPagosProyecto(proyectoId, proyectoNombre) {
+    // Mostrar el modal primero
+    $('#modal_pagos_proyecto').modal('show');
+    
+    // Cargar pagos del proyecto
     $.ajax({
         url: `${base_path}/cxp/pagos-proyecto-ajax`,
         type: 'post',
@@ -138,6 +142,8 @@ function verPagosProyecto(proyectoId, proyectoNombre) {
         success: function(response) {
             if (response.estado) {
                 mostrarPagosProyecto(proyectoNombre, response.datos.data, response.datos.resumen);
+                // Cargar consumo por líneas
+                cargarConsumoLineasPresupuesto(proyectoId);
             } else {
                 iziToast.error({
                     title: 'Error',
@@ -155,6 +161,144 @@ function verPagosProyecto(proyectoId, proyectoNombre) {
             });
         }
     });
+}
+
+/**
+ * Cargar consumo por líneas de presupuesto
+ */
+function cargarConsumoLineasPresupuesto(proyectoId) {
+    $.ajax({
+        url: `${base_path}/cxp/consumo-lineas-presupuesto-ajax`,
+        type: 'post',
+        data: {
+            proyecto_id: proyectoId,
+            _token: CSRF_TOKEN
+        },
+        dataType: 'json',
+        success: function(response) {
+            if (response.estado) {
+                renderizarLineasPresupuesto(response.datos.data);
+            } else {
+                $('#tbody_lineas_presupuesto').html(`
+                    <tr>
+                        <td colspan="7" class="text-center text-danger">
+                            <i class="fas fa-exclamation-triangle"></i> ${response.mensaje || 'Error al cargar líneas'}
+                        </td>
+                    </tr>
+                `);
+            }
+        },
+        error: function(xhr) {
+            console.error('Error al cargar consumo por líneas:', xhr);
+            $('#tbody_lineas_presupuesto').html(`
+                <tr>
+                    <td colspan="7" class="text-center text-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Error al cargar el consumo por líneas
+                    </td>
+                </tr>
+            `);
+        }
+    });
+}
+
+/**
+ * Renderizar tabla de líneas de presupuesto con consumo
+ */
+function renderizarLineasPresupuesto(lineas) {
+    let tbody = $('#tbody_lineas_presupuesto');
+    tbody.empty();
+
+    if (!lineas || lineas.length === 0) {
+        tbody.append(`
+            <tr>
+                <td colspan="7" class="text-center text-muted">
+                    <i class="fas fa-inbox"></i> No hay líneas de presupuesto para este proyecto
+                </td>
+            </tr>
+        `);
+        return;
+    }
+
+    let totalAutorizado = 0;
+    let totalConsumido = 0;
+    let totalPendiente = 0;
+
+    lineas.forEach((linea) => {
+        let montoAutorizado = parseFloat(linea.monto_autorizado || 0);
+        let montoConsumido = parseFloat(linea.monto_consumido || 0);
+        let montoPendiente = parseFloat(linea.monto_pendiente || 0);
+        let montoDisponible = parseFloat(linea.monto_disponible || 0);
+        let porcentajeConsumido = parseFloat(linea.porcentaje_consumido || 0);
+
+        totalAutorizado += montoAutorizado;
+        totalConsumido += montoConsumido;
+        totalPendiente += montoPendiente;
+
+        // Determinar clase de fila según el porcentaje consumido
+        let claseFila = '';
+        if (porcentajeConsumido >= 100) {
+            claseFila = 'bg-danger text-white';
+        } else if (porcentajeConsumido >= 80) {
+            claseFila = 'bg-warning';
+        } else if (porcentajeConsumido >= 50) {
+            claseFila = 'bg-light';
+        }
+
+        // Badge de porcentaje
+        let badgePorcentaje = '';
+        if (porcentajeConsumido >= 100) {
+            badgePorcentaje = `<span class="badge badge-danger">${porcentajeConsumido.toFixed(2)}%</span>`;
+        } else if (porcentajeConsumido >= 80) {
+            badgePorcentaje = `<span class="badge badge-warning">${porcentajeConsumido.toFixed(2)}%</span>`;
+        } else {
+            badgePorcentaje = `<span class="badge badge-info">${porcentajeConsumido.toFixed(2)}%</span>`;
+        }
+
+        // Indicador de disponibilidad
+        let claseDisponible = montoDisponible >= 0 ? 'text-success' : 'text-danger';
+        let iconoDisponible = montoDisponible >= 0 ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>';
+
+        tbody.append(`
+            <tr class="${claseFila}">
+                <td class="text-center"><strong>#${linea.numero_linea}</strong></td>
+                <td>${linea.descripcion || '-'}</td>
+                <td class="text-right">
+                    <strong>₡${montoAutorizado.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong>
+                </td>
+                <td class="text-right bg-success text-white">
+                    <strong>₡${montoConsumido.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong>
+                    ${linea.num_bitacoras_aprobadas > 0 ? `<br><small>(${linea.num_bitacoras_aprobadas} bitácoras)</small>` : ''}
+                </td>
+                <td class="text-right bg-warning">
+                    <strong>₡${montoPendiente.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong>
+                    ${linea.num_bitacoras_pendientes > 0 ? `<br><small>(${linea.num_bitacoras_pendientes} bitácoras)</small>` : ''}
+                </td>
+                <td class="text-right ${claseDisponible}">
+                    <strong>${iconoDisponible} ₡${montoDisponible.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong>
+                </td>
+                <td class="text-center">${badgePorcentaje}</td>
+            </tr>
+        `);
+    });
+
+    // Agregar fila de totales
+    let totalDisponible = totalAutorizado - totalConsumido;
+    let porcentajeTotal = totalAutorizado > 0 ? (totalConsumido / totalAutorizado) * 100 : 0;
+
+    tbody.append(`
+        <tr class="bg-light font-weight-bold">
+            <td colspan="2" class="text-right"><strong>TOTALES:</strong></td>
+            <td class="text-right"><strong>₡${totalAutorizado.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong></td>
+            <td class="text-right bg-success text-white"><strong>₡${totalConsumido.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong></td>
+            <td class="text-right bg-warning"><strong>₡${totalPendiente.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong></td>
+            <td class="text-right ${totalDisponible >= 0 ? 'text-success' : 'text-danger'}">
+                <strong>₡${totalDisponible.toLocaleString('es-CR', {minimumFractionDigits: 2})}</strong>
+            </td>
+            <td class="text-center">
+                <strong>${porcentajeTotal.toFixed(2)}%</strong>
+            </td>
+        </tr>
+    `);
 }
 
 /**
@@ -250,7 +394,7 @@ function mostrarPagosProyecto(proyectoNombre, pagos, resumen) {
         info: true
     });
 
-    $('#modal_pagos_proyecto').modal('show');
+    // El modal ya está abierto, no lo abrimos de nuevo
 }
 
 /**
@@ -436,6 +580,48 @@ function mostrarDetallePago(data) {
                             </div>
                         </div>
                         ` : ''}
+
+                        ${cxp.bitacoras && cxp.bitacoras.length > 0 ? `
+                        <div class="mt-3">
+                            <strong><i class="fas fa-clipboard-list"></i> Bitácoras Relacionadas (${cxp.bitacoras.length}):</strong>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm table-bordered table-hover">
+                                    <thead class="thead-light">
+                                        <tr class="text-center">
+                                            <th style="width: 80px;">Fecha</th>
+                                            <th>Usuario</th>
+                                            <th>Proyecto</th>
+                                            <th style="width: 80px;">Horas</th>
+                                            <th>Rubro</th>
+                                            <th style="width: 100px;">Línea Presupuesto</th>
+                                            <th class="text-right">Costo (₡)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${cxp.bitacoras.map(b => `
+                                        <tr>
+                                            <td class="text-center"><small>${formatearFechaSimple(b.fecha)}</small></td>
+                                            <td><small>${b.usuario_nombre || 'N/A'}</small></td>
+                                            <td><small>${b.proyecto_nombre || 'N/A'}</small></td>
+                                            <td class="text-center">${parseFloat(b.horas_calculadas || 0).toFixed(2)}</td>
+                                            <td><small>${b.rubro_nombre || 'Normal'} (×${parseFloat(b.multiplicador || 1).toFixed(2)})</small></td>
+                                            <td class="text-center">
+                                                ${b.linea_numero ? `<span class="badge badge-info">#${b.linea_numero}</span><br><small class="text-muted">${(b.linea_descripcion || '').substring(0, 30)}${(b.linea_descripcion || '').length > 30 ? '...' : ''}</small>` : '<span class="text-muted">-</span>'}
+                                            </td>
+                                            <td class="text-right">₡${parseFloat(b.costo_calculado || 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
+                                        </tr>
+                                        `).join('')}
+                                    </tbody>
+                                    <tfoot class="bg-light">
+                                        <tr class="font-weight-bold">
+                                            <td colspan="6" class="text-right">Total:</td>
+                                            <td class="text-right">₡${cxp.bitacoras.reduce((sum, b) => sum + parseFloat(b.costo_calculado || 0), 0).toLocaleString('es-CR', {minimumFractionDigits: 2})}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -471,4 +657,16 @@ function formatearFecha(fecha) {
     let hora = String(d.getHours()).padStart(2, '0');
     let minuto = String(d.getMinutes()).padStart(2, '0');
     return `${dia}/${mes}/${anio} ${hora}:${minuto}`;
+}
+
+/**
+ * Formatear fecha simple (sin hora)
+ */
+function formatearFechaSimple(fecha) {
+    if (!fecha) return '-';
+    let d = new Date(fecha + 'T00:00:00');
+    let dia = String(d.getDate()).padStart(2, '0');
+    let mes = String(d.getMonth() + 1).padStart(2, '0');
+    let anio = d.getFullYear();
+    return `${dia}/${mes}/${anio}`;
 }

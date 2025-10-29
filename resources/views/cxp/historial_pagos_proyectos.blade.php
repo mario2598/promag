@@ -202,6 +202,39 @@
                             </tfoot>
                         </table>
                     </div>
+
+                    <!-- Desglose por Líneas de Presupuesto -->
+                    <hr class="my-4">
+                    
+                    <div class="card">
+                        <div class="card-header bg-soft-info">
+                            <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Consumo por Líneas de Presupuesto</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-hover table-sm" id="tabla_lineas_presupuesto">
+                                    <thead class="thead-light">
+                                        <tr class="text-center">
+                                            <th style="width: 80px;"># Línea</th>
+                                            <th>Descripción</th>
+                                            <th class="text-right">Monto Autorizado</th>
+                                            <th class="text-right bg-success text-white">Consumido (Aprobadas)</th>
+                                            <th class="text-right bg-warning">Pendiente</th>
+                                            <th class="text-right">Disponible</th>
+                                            <th class="text-center" style="width: 100px;">% Consumido</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody_lineas_presupuesto">
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted">
+                                                <i class="fas fa-spinner fa-spin"></i> Cargando...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">

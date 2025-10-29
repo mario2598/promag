@@ -27,7 +27,7 @@ function cargarUsuariosConCxP() {
 }
 
 function procesarUsuariosConCxP(cxp) {
-    // Agrupar CxP por usuario
+    // Agrupar CxP por beneficiario (el que recibe el pago)
     let usuarios = {};
     let totalCxP = 0;
     let montoTotal = 0;
@@ -38,15 +38,22 @@ function procesarUsuariosConCxP(cxp) {
             return;
         }
 
-        let usuarioId = c.usuario_creacion || 'sin_usuario';
-        let usuarioNombre = c.usuario_creacion_nombre || 'Sin usuario asignado';
+        // Agrupar por beneficiario (nombre del beneficiario) y número de cuenta
+        // Usar combinación de beneficiario + cuenta para identificar únicos
+        let beneficiario = c.beneficiario || 'Sin beneficiario';
+        let numeroCuenta = c.numero_cuenta || 'Sin cuenta';
+        let claveBeneficiario = beneficiario + '|' + numeroCuenta;
         
-        if (!usuarios[usuarioId]) {
-            usuarios[usuarioId] = {
-                id: usuarioId,
-                nombre: usuarioNombre,
-                beneficiario: c.beneficiario || 'No especificado',
-                numero_cuenta: c.numero_cuenta || 'No especificado',
+        // Obtener nombre del usuario beneficiario si existe
+        let nombreUsuario = c.usuario_beneficiario_nombre || beneficiario || 'Sin usuario asignado';
+        
+        if (!usuarios[claveBeneficiario]) {
+            usuarios[claveBeneficiario] = {
+                id: claveBeneficiario,
+                usuario_beneficiario_id: c.usuario_beneficiario || null,
+                nombre: nombreUsuario,
+                beneficiario: beneficiario,
+                numero_cuenta: numeroCuenta,
                 cxps: [],
                 cantidadCxP: 0,
                 montoTotal: 0
@@ -55,9 +62,9 @@ function procesarUsuariosConCxP(cxp) {
         
         let saldoPendiente = parseFloat(c.monto_total || 0) - parseFloat(c.monto_pagado || 0);
         
-        usuarios[usuarioId].cxps.push(c);
-        usuarios[usuarioId].cantidadCxP++;
-        usuarios[usuarioId].montoTotal += saldoPendiente;
+        usuarios[claveBeneficiario].cxps.push(c);
+        usuarios[claveBeneficiario].cantidadCxP++;
+        usuarios[claveBeneficiario].montoTotal += saldoPendiente;
         
         totalCxP++;
         montoTotal += saldoPendiente;
